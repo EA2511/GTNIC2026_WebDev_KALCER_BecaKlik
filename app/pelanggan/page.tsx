@@ -748,7 +748,7 @@ function PelangganContent() {
 
   // Simulation playback for demonstration
   const [isSimulating, setIsSimulating] = useState(true);
-  const [simSpeed, setSimSpeed] = useState<number>(6); // Delta % per detik
+  const [simSpeed, setSimSpeed] = useState<number>(2); // Delta % per detik (halus & realistis)
   const simTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Rating & Tip State (Default Rp0 / Tanpa Tip agar mudah disesuaikan)

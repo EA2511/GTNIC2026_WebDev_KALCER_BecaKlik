@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const oId = Number(orderId);
-    const stepDelta = deltaPercent != null ? Number(deltaPercent) : 6;
+    const stepDelta = deltaPercent != null ? Number(deltaPercent) : 2;
     const clientProgress = body.currentProgress != null ? Number(body.currentProgress) : null;
 
     let targetOrder = sharedStore.getOrder(oId);
@@ -25,7 +25,13 @@ export async function POST(request: Request) {
       targetOrder = sharedStore.getActiveOrder();
     }
 
-    if (targetOrder && clientProgress != null && clientProgress > (targetOrder.simulationProgress || 0)) {
+    if (
+      targetOrder &&
+      clientProgress != null &&
+      targetOrder.status !== "MENCARI_DRIVER" &&
+      (clientProgress < 100 || forceAdvance) &&
+      clientProgress > (targetOrder.simulationProgress || 0)
+    ) {
       targetOrder.simulationProgress = clientProgress;
     }
 

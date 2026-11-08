@@ -226,17 +226,21 @@ export default function TripChat({
 
   return (
     <div
+      className="trip-chat-container"
       style={{
         background: '#ffffff',
         borderRadius: '16px',
         border: '1px solid #e2e8f0',
-        boxShadow: 'var(--shadow)',
+        boxShadow: '0 4px 15px -3px rgba(0,0,0,0.07)',
         display: 'flex',
         flexDirection: 'column',
-        height: '380px',
-        maxHeight: '65vh',
+        height: '420px',
+        maxHeight: 'min(500px, 70vh)',
+        minHeight: '340px',
         overflow: 'hidden',
         width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
       }}
     >
       {/* Header Percakapan */}
@@ -244,14 +248,15 @@ export default function TripChat({
         style={{
           background: 'linear-gradient(90deg, #075985 0%, #0284c7 100%)',
           color: '#ffffff',
-          padding: '10px 14px',
+          padding: '10px 12px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexShrink: 0,
+          gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
           <div
             style={{
               width: '32px',
@@ -271,7 +276,7 @@ export default function TripChat({
               <User size={16} color="#ffffff" />
             )}
           </div>
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <strong
                 style={{
@@ -279,7 +284,7 @@ export default function TripChat({
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  maxWidth: '160px',
+                  maxWidth: '130px',
                 }}
               >
                 {currentUserRole === 'PENUMPANG'
@@ -294,6 +299,7 @@ export default function TripChat({
                   padding: '1px 6px',
                   borderRadius: '999px',
                   fontWeight: 700,
+                  flexShrink: 0,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '3px',
@@ -307,25 +313,29 @@ export default function TripChat({
                 fontSize: '10px',
                 color: '#e0f2fe',
                 display: 'block',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              Pesanan #{orderId} · Terenkripsi In-App
+              Pesanan #{orderId} · Terenkripsi
             </span>
           </div>
         </div>
 
         <span
           style={{
-            fontSize: '10px',
+            fontSize: '9.5px',
             color: '#38bdf8',
             background: 'rgba(56, 189, 248, 0.18)',
-            padding: '3px 8px',
+            padding: '2px 7px',
             borderRadius: '999px',
             fontWeight: 700,
             whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
         >
-          ⚡ Live Sync
+          ⚡ Live
         </span>
       </div>
 
@@ -374,10 +384,13 @@ export default function TripChat({
                 key={msg.id ? `msg-${msg.id}` : `idx-${index}`}
                 style={{
                   alignSelf: isMe ? 'flex-end' : 'flex-start',
-                  maxWidth: '84%',
+                  maxWidth: '85%',
+                  minWidth: '60px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: isMe ? 'flex-end' : 'flex-start',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere',
                 }}
               >
                 <div
@@ -407,13 +420,15 @@ export default function TripChat({
                     color: isMe ? '#ffffff' : '#0f172a',
                     padding: '8px 12px',
                     borderRadius: isMe ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    fontSize: '12.5px',
+                    fontSize: '13px',
                     lineHeight: '1.45',
                     boxShadow: isMe
                       ? '0 3px 10px rgba(2, 132, 199, 0.22)'
                       : '0 1px 4px rgba(0,0,0,0.06)',
                     border: isMe ? 'none' : '1px solid #e2e8f0',
                     wordBreak: 'break-word',
+                    overflowWrap: 'anywhere',
+                    whiteSpace: 'pre-wrap',
                   }}
                 >
                   {msg.pesan}
@@ -443,13 +458,14 @@ export default function TripChat({
         style={{
           background: '#ffffff',
           borderTop: '1px solid #e2e8f0',
-          padding: '6px 10px',
+          padding: '6px 8px',
           display: 'flex',
           gap: '6px',
           overflowX: 'auto',
           whiteSpace: 'nowrap',
           flexShrink: 0,
           WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
         }}
       >
         {quickTemplates.map((template, idx) => (
@@ -461,13 +477,13 @@ export default function TripChat({
               background: '#f1f5f9',
               border: '1px solid #cbd5e1',
               borderRadius: '999px',
-              padding: '5px 10px',
+              padding: '5px 9px',
               fontSize: '11px',
               fontWeight: 600,
               color: '#334155',
               cursor: 'pointer',
               flexShrink: 0,
-              transition: 'background 0.15s ease',
+              transition: 'all 0.15s ease',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = '#e0f2fe')}
             onMouseLeave={(e) => (e.currentTarget.style.background = '#f1f5f9')}
@@ -491,6 +507,8 @@ export default function TripChat({
           gap: '8px',
           alignItems: 'center',
           flexShrink: 0,
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         <input
@@ -504,11 +522,13 @@ export default function TripChat({
           maxLength={500}
           style={{
             flex: 1,
-            height: '38px',
+            minWidth: 0,
+            width: '100%',
+            height: '40px',
             padding: '0 14px',
             borderRadius: '999px',
-            border: '1px solid #cbd5e1',
-            fontSize: '12.5px',
+            border: '1.5px solid #cbd5e1',
+            fontSize: '15px',
             outline: 'none',
             background: '#f8fafc',
             color: '#0f172a',
@@ -523,8 +543,8 @@ export default function TripChat({
           disabled={loading || !inputText.trim()}
           aria-label="Kirim Pesan"
           style={{
-            width: '38px',
-            height: '38px',
+            width: '40px',
+            height: '40px',
             borderRadius: '50%',
             background: !inputText.trim() || loading ? '#cbd5e1' : '#0284c7',
             color: '#ffffff',

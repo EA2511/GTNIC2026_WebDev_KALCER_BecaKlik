@@ -687,6 +687,9 @@ function BaseInteractiveMap({
     const incomingIds = new Set<number>();
 
     allDrivers.forEach((d) => {
+      if (!d || typeof d.lat !== 'number' || typeof d.lng !== 'number' || isNaN(d.lat) || isNaN(d.lng)) {
+        return;
+      }
       incomingIds.add(d.id);
       const isTrip = d.status === 'ON_TRIP' || d.status === 'Dalam perjalanan';
       const isOnline = d.status === 'ONLINE' || d.status === 'Online';

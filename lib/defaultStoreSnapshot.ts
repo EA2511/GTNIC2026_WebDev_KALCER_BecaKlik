@@ -711,8 +711,8 @@ export const SNAPSHOT_ORDERS: [number, SharedOrder][] = [
         }
       },
       "createdAt": "2026-11-08T03:04:49.636Z",
-      "dismissedByDriver": false,
-      "dismissedByPassenger": false,
+      "dismissedByDriver": true,
+      "dismissedByPassenger": true,
       "lastStepAt": 1794107113797,
       "vehicle": {
         "kodeUnit": "BL-001",

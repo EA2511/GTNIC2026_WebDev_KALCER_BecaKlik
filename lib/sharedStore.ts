@@ -1051,8 +1051,11 @@ export const sharedStore = {
         (order.driverId === driverId || order.driverId == null) &&
         order.status === 'SELESAI'
       ) {
-        ensureRouteCoords(order);
-        return order;
+        // Hanya kembalikan status SELESAI jika baru selesai dalam 45 detik terakhir (agar animasi tiba di tujuan sempat terlihat)
+        if (order.lastStepAt && Date.now() - order.lastStepAt < 45_000) {
+          ensureRouteCoords(order);
+          return order;
+        }
       }
     }
     return null;
@@ -1216,7 +1219,7 @@ export const sharedStore = {
   },
 
   // Mesin Langkah Simulasi Terpadu (Sinkron 100% antara Pelanggan, Driver & Admin)
-  stepOrder(orderId: number, deltaPercent = 6, forceAdvance = false): SharedOrder | null {
+  stepOrder(orderId: number, deltaPercent = 2, forceAdvance = false): SharedOrder | null {
     const order = this.getOrder(orderId);
     if (!order) return null;
 
@@ -1239,7 +1242,7 @@ export const sharedStore = {
     order.lastStepAt = now;
 
     const currentProg = Math.max(5, Number(order.simulationProgress || 5));
-    const step = forceAdvance ? Math.max(20, deltaPercent) : Math.max(4, Math.min(25, deltaPercent));
+    const step = forceAdvance ? Math.max(25, deltaPercent) : Math.max(1, Math.min(10, deltaPercent));
     const nextProg = Math.min(100, currentProg + step);
 
     if (nextProg >= 100) {

@@ -754,8 +754,8 @@ export default function DriverPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: activeOrdId,
-            deltaPercent: 6,
-            currentProgress: activeOrder?.simulationProgress || 0,
+            deltaPercent: 2,
+            currentProgress: activeOrder?.simulationProgress || 5,
           }),
         });
         const data = await res.json().catch(() => null);
@@ -792,7 +792,7 @@ export default function DriverPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeOrdId, activeOrdStatus, autoSimDriver, activeOrder?.simulationProgress]);
+  }, [activeOrdId, activeOrdStatus, autoSimDriver]);
 
   // Sinkronisasi Lintas-Tab Driver <-> Penumpang (Zero Latency Lockstep)
   useEffect(() => {

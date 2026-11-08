@@ -397,7 +397,7 @@ export default function AdminPage() {
 
   const maxRevenue = Math.max(
     1,
-    ...(stats?.trend.map((t) => t.revenue) || [100000])
+    ...(stats?.trend?.map((t) => t.revenue) || [100000])
   );
 
   const activeLiveOrders = (stats?.liveOrders || []).filter((o) =>
@@ -1282,7 +1282,7 @@ export default function AdminPage() {
             </div>
 
             <div className="bar-chart" aria-label="Grafik pendapatan 7 hari">
-              {stats?.trend.map((v, i) => {
+              {stats?.trend?.map((v, i) => {
                 const heightPct = Math.max(12, Math.round((v.revenue / maxRevenue) * 100));
                 return (
                   <div className="bar-column" key={v.d + i}>

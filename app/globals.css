@@ -5154,4 +5154,16 @@ td:first-child {
   transition: transform 0.85s linear;
 }
 
+/* Mobile Optimization for Live Trip Chat */
+@media (max-width: 640px) {
+  .trip-chat-container {
+    height: 380px !important;
+    max-height: calc(100dvh - 180px) !important;
+    border-radius: 14px !important;
+  }
+  .trip-chat-container input {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+  }
+}
+
 
