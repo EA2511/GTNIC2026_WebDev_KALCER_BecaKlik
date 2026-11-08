@@ -27,7 +27,51 @@ export async function GET() {
     const driverOneRank = rankedFleet.find((d) => d.rawId === 1) || rankedFleet[0];
 
     const sharedIncoming = sharedStore.getIncomingOrders();
-    const sharedActiveOrder = sharedStore.getActiveOrder(1);
+    let sharedActiveOrder = sharedStore.getActiveOrder(1);
+
+    if (!sharedActiveOrder) {
+      try {
+        const dbOrder = await prisma.order.findFirst({
+          where: {
+            driverId: 1,
+            status: { in: ["DITERIMA", "DIJEMPUT", "BERJALAN"] },
+          },
+          orderBy: { id: "desc" },
+          include: {
+            driver: {
+              include: {
+                user: { select: { nama: true, noHp: true } },
+                vehicle: true,
+              },
+            },
+            penumpang: { select: { id: true, nama: true, noHp: true } },
+          },
+        });
+        if (dbOrder) {
+          sharedActiveOrder = sharedStore.createOrder({
+            id: dbOrder.id,
+            kode: dbOrder.kode,
+            status: dbOrder.status as any,
+            simulationProgress: dbOrder.simulationProgress || 5,
+            jemputAlamat: dbOrder.jemputAlamat,
+            jemputLat: dbOrder.jemputLat ?? -6.8362,
+            jemputLng: dbOrder.jemputLng ?? 108.2281,
+            tujuanAlamat: dbOrder.tujuanAlamat,
+            tujuanLat: dbOrder.tujuanLat ?? -6.8400,
+            tujuanLng: dbOrder.tujuanLng ?? 108.2250,
+            jarakKm: Number(dbOrder.jarakKm || 2.5),
+            durasiMenit: dbOrder.durasiMenit,
+            tarif: dbOrder.tarif,
+            diskon: dbOrder.diskon,
+            tip: 0,
+            totalBayar: dbOrder.totalBayar,
+            metodePembayaran: "QRIS",
+            penumpangNama: dbOrder.penumpang?.nama || "Rina Kusuma",
+            driverId: 1,
+          });
+        }
+      } catch {}
+    }
 
     const activeDriverStatus =
       sharedStore.getDriverStatus() || driverStatusMap.get(1) || "ONLINE";

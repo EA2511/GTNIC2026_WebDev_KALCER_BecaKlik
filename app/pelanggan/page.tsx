@@ -851,20 +851,6 @@ function PelangganContent() {
             localStorage.removeItem("becak_active_order_id");
           }
         }
-
-        // Cek juga apakah ada order yang sedang berjalan dari cockpit driver (misal simulasi juri dari tab driver)
-        const drvRes = await fetch("/api/driver/active");
-        const drvData = await drvRes.json().catch(() => null);
-        if (!active) return;
-        if (
-          drvData?.activeOrder &&
-          !drvData.activeOrder.dismissedByPassenger &&
-          ONGOING.includes(drvData.activeOrder.status) &&
-          drvData.activeOrder.simulationProgress < 100
-        ) {
-          setActiveOrder(drvData.activeOrder);
-          setIsSimulating(true);
-        }
       } catch (err) {
         console.warn("Notice restoring active trip:", err);
       }
@@ -1698,6 +1684,12 @@ function PelangganContent() {
     setActiveOrder(null);
     setSearchSeconds(0);
     showToast("✓ Pesanan berhasil dibatalkan. Anda dapat mengubah rute.");
+
+    try {
+      const bc = new BroadcastChannel("becaklik_order_sync");
+      bc.postMessage({ type: "ORDER_CANCELLED", orderId: cancelId });
+      bc.close();
+    } catch {}
 
     try {
       await fetch(`/api/orders/${cancelId}`, {

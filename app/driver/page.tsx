@@ -122,6 +122,8 @@ interface OrderInfo {
   status: string;
   simulationProgress: number;
   routeGeometry?: string;
+  dismissedByDriver?: boolean;
+  dismissedByPassenger?: boolean;
   penumpangNama?: string;
   penumpang?: { nama: string; noHp?: string };
   driver?: {
@@ -261,7 +263,39 @@ export default function DriverPage() {
     }
   }, []);
 
-  const [activeOrder, setActiveOrder] = useState<OrderInfo | null>(null);
+  const [activeOrder, setActiveOrder] = useState<OrderInfo | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("becak_driver_active_order");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (
+            parsed &&
+            parsed.status !== "DIBATALKAN" &&
+            !parsed.dismissedByDriver
+          ) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return null;
+  });
+
+  // Sinkronisasi permanen activeOrder Driver ke localStorage (Mencegah reset/menghilang saat serverless polling blip)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (
+      activeOrder &&
+      activeOrder.status !== "DIBATALKAN" &&
+      !activeOrder.dismissedByDriver &&
+      activeOrder.id !== dismissedOrderIdRef.current
+    ) {
+      localStorage.setItem("becak_driver_active_order", JSON.stringify(activeOrder));
+    } else {
+      localStorage.removeItem("becak_driver_active_order");
+    }
+  }, [activeOrder]);
   const [incomingOrders, setIncomingOrders] = useState<OrderInfo[]>([]);
   const [reviews, setReviews] = useState<ReviewInfo[]>([
     {
@@ -390,7 +424,21 @@ export default function DriverPage() {
           rawActive ? "ON_TRIP" : localSaved || data.driver.status || "ONLINE"
         ) as DriverData["status"];
         setDriver({ ...data.driver, status: effectiveStatus });
-        setActiveOrder(rawActive);
+        if (rawActive) {
+          setActiveOrder(rawActive);
+        } else {
+          setActiveOrder((prev) => {
+            if (
+              prev &&
+              !prev.dismissedByDriver &&
+              prev.status !== "DIBATALKAN" &&
+              prev.id !== dismissedOrderIdRef.current
+            ) {
+              return prev; // Pertahankan pesanan aktif jika serverless response sementara null
+            }
+            return null;
+          });
+        }
         const filteredInc = (data.incomingOrders || []).filter(
           (o: OrderInfo) => !rejectedOrderIdsRef.current.has(o.id),
         );
@@ -473,11 +521,21 @@ export default function DriverPage() {
             return { ...prev, ...d, status: effectiveStatus };
           });
 
-          // Guard activeOrder state (Never allow progress or status to jump backwards)
+          // Guard activeOrder state (Mencegah trip hilang/reset saat response serverless sementara null)
           setActiveOrder((prev) => {
+            if (prev && !rawActive) {
+              if (
+                prev.status === "DIBATALKAN" ||
+                prev.dismissedByDriver ||
+                prev.id === dismissedOrderIdRef.current
+              ) {
+                return null;
+              }
+              // Pertahankan active order driver terhadap osilasi cold instance Vercel!
+              return prev;
+            }
             if (!prev && !rawActive) return null;
             if (!prev && rawActive) return rawActive;
-            if (prev && !rawActive) return null;
             const o = rawActive;
             if (prev!.id !== o.id) return o;
 
@@ -819,9 +877,33 @@ export default function DriverPage() {
             });
             bc.close();
           } catch {}
+        } else {
+          // Fallback lokal jika response serverless sementara tidak mengembalikan order
+          setActiveOrder((prev) => {
+            if (!prev || prev.id !== activeOrdId) return prev;
+            if (prev.status === "SELESAI") return prev;
+            const nextProg = Math.min(100, (prev.simulationProgress || 0) + 1.5);
+            const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 20 ? "BERJALAN" : prev.status;
+            return {
+              ...prev,
+              simulationProgress: nextProg,
+              status: nextStatus,
+            };
+          });
         }
       } catch {
-        // background step
+        // Fallback lokal jika ada glitch koneksi agar simulasi tidak tersendat atau reset
+        setActiveOrder((prev) => {
+          if (!prev || prev.id !== activeOrdId) return prev;
+          if (prev.status === "SELESAI") return prev;
+          const nextProg = Math.min(100, (prev.simulationProgress || 0) + 1.5);
+          const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 20 ? "BERJALAN" : prev.status;
+          return {
+            ...prev,
+            simulationProgress: nextProg,
+            status: nextStatus,
+          };
+        });
       }
     }, 1000);
 
@@ -857,7 +939,7 @@ export default function DriverPage() {
     };
   }, [activeOrdId]);
 
-  // Sinkronisasi Order Masuk Lintas-Tab dari Penumpang (Instant Notification)
+  // Sinkronisasi Order Masuk & Pembatalan Lintas-Tab dari Penumpang (Instant Notification)
   useEffect(() => {
     if (typeof window === "undefined") return;
     let bc: BroadcastChannel | null = null;
@@ -870,6 +952,17 @@ export default function DriverPage() {
             if (prev.some((o) => o.id === incoming.id)) return prev;
             playOrderChime();
             return [incoming, ...prev];
+          });
+        } else if (event.data?.type === "ORDER_CANCELLED" && event.data.orderId) {
+          setIncomingOrders((prev) => prev.filter((o) => o.id !== event.data.orderId));
+          setActiveOrder((prev) => {
+            if (prev && prev.id === event.data.orderId) {
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("becak_driver_active_order");
+              }
+              return null;
+            }
+            return prev;
           });
         }
       };
@@ -885,6 +978,9 @@ export default function DriverPage() {
     if (!driver || !activeOrder) return;
     const finishedOrderId = activeOrder.id;
     dismissedOrderIdRef.current = finishedOrderId;
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("becak_driver_active_order");
+    }
     setActiveOrder(null);
     setDriverTab("nav");
     prevTipRef.current = 0;

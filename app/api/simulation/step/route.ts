@@ -25,6 +25,46 @@ export async function POST(request: Request) {
       targetOrder = sharedStore.getActiveOrder();
     }
 
+    if (!targetOrder) {
+      try {
+        const dbOrder = await prisma.order.findUnique({
+          where: { id: oId },
+          include: {
+            driver: {
+              include: {
+                user: { select: { nama: true, noHp: true } },
+                vehicle: true,
+              },
+            },
+            penumpang: { select: { id: true, nama: true, noHp: true } },
+          },
+        });
+        if (dbOrder) {
+          targetOrder = sharedStore.createOrder({
+            id: dbOrder.id,
+            kode: dbOrder.kode,
+            status: dbOrder.status as any,
+            simulationProgress: dbOrder.simulationProgress || 5,
+            jemputAlamat: dbOrder.jemputAlamat,
+            jemputLat: dbOrder.jemputLat ?? -6.8362,
+            jemputLng: dbOrder.jemputLng ?? 108.2281,
+            tujuanAlamat: dbOrder.tujuanAlamat,
+            tujuanLat: dbOrder.tujuanLat ?? -6.8400,
+            tujuanLng: dbOrder.tujuanLng ?? 108.2250,
+            jarakKm: Number(dbOrder.jarakKm || 2.5),
+            durasiMenit: dbOrder.durasiMenit,
+            tarif: dbOrder.tarif,
+            diskon: dbOrder.diskon,
+            tip: 0,
+            totalBayar: dbOrder.totalBayar,
+            metodePembayaran: "QRIS",
+            penumpangNama: dbOrder.penumpang?.nama || "Rina Kusuma",
+            driverId: dbOrder.driverId || 1,
+          });
+        }
+      } catch {}
+    }
+
     if (
       targetOrder &&
       clientProgress != null &&

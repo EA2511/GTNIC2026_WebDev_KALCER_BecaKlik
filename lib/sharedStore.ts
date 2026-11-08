@@ -965,8 +965,14 @@ function ensureRouteCoords(order: SharedOrder): LatLng[] {
 }
 
 export const sharedStore = {
-  // Buat Order Baru (Status MENCARI_DRIVER)
-  createOrder(data: Omit<SharedOrder, 'id' | 'driverId' | 'driver' | 'createdAt'> & { id?: number }): SharedOrder {
+  // Buat Order Baru (Status MENCARI_DRIVER atau restore)
+  createOrder(
+    data: Partial<SharedOrder> & {
+      kode: string;
+      jemputAlamat: string;
+      tujuanAlamat: string;
+    }
+  ): SharedOrder {
     const id = data.id && Number.isInteger(data.id) ? data.id : store.nextOrderId++;
     for (const old of store.orders.values()) {
       if (old.status === 'SELESAI' || old.status === 'DIBATALKAN') {
@@ -977,20 +983,58 @@ export const sharedStore = {
     let routeGeom = data.routeGeometry;
     if (!routeGeom || routeGeom === '[]') {
       const coords = generateRoadCorridorFallback(
-        data.jemputLat,
-        data.jemputLng,
-        data.tujuanLat,
-        data.tujuanLng
+        data.jemputLat ?? -6.8362,
+        data.jemputLng ?? 108.2281,
+        data.tujuanLat ?? -6.8295,
+        data.tujuanLng ?? 108.2198
       );
       routeGeom = JSON.stringify(coords);
     }
     const order: SharedOrder = {
-      ...data,
       id,
+      kode: data.kode,
+      status: data.status || 'MENCARI_DRIVER',
+      jemputAlamat: data.jemputAlamat,
+      jemputLat: Number(data.jemputLat ?? -6.8362),
+      jemputLng: Number(data.jemputLng ?? 108.2281),
+      tujuanAlamat: data.tujuanAlamat,
+      tujuanLat: Number(data.tujuanLat ?? -6.8295),
+      tujuanLng: Number(data.tujuanLng ?? 108.2198),
+      jarakKm: Number(data.jarakKm ?? 2.5),
+      durasiMenit: Number(data.durasiMenit ?? 10),
+      tarif: Number(data.tarif ?? 12000),
+      diskon: Number(data.diskon ?? 0),
+      tip: Number(data.tip ?? 0),
+      totalBayar: Number(data.totalBayar ?? 12000),
+      serviceType: data.serviceType || 'REGULER',
+      passengerCount: data.passengerCount || 1,
+      catatan: data.catatan,
+      metodePembayaran: data.metodePembayaran || 'QRIS',
+      simulationProgress: Number(data.simulationProgress ?? 0),
       routeGeometry: routeGeom,
-      driverId: null,
-      driver: null,
-      createdAt: new Date().toISOString(),
+      penumpangNama: data.penumpangNama || 'Rina Kusuma',
+      penumpangEmail: data.penumpangEmail || 'rina@becak.test',
+      penumpangNoHp: data.penumpangNoHp || '081234567890',
+      driverId: data.driverId || null,
+      driver: data.driver || (data.driverId
+        ? {
+            id: data.driverId,
+            ratingAverage: 4.95,
+            totalTrips: 63,
+            currentLat: Number(data.jemputLat ?? -6.8362),
+            currentLng: Number(data.jemputLng ?? 108.2281),
+            heading: 90,
+            user: { id: data.driverId, nama: 'Budi Santoso', noHp: '081234560001' },
+            vehicle: {
+              kodeUnit: 'BL-001',
+              modelName: 'Becak Listrik Majalengka EV',
+              warna: 'Biru Langit',
+              kapasitas: 2,
+              batteryPct: 94,
+            },
+          }
+        : null),
+      createdAt: data.createdAt || new Date().toISOString(),
     };
     store.orders.set(id, order);
     syncDriverOneToFleet();
@@ -1030,7 +1074,7 @@ export const sharedStore = {
     return incoming.sort((a, b) => b.id - a.id);
   },
 
-  // Mendapatkan order aktif yang sedang dijalankan oleh Driver (DITERIMA / DIJEMPUT / BERJALAN)
+  // Mendapatkan order aktif yang sedang dijalankan oleh Driver (DITERIMA / DIJEMPUT / BERJALAN / SELESAI sebelum di-dismiss)
   getActiveOrder(driverId = 1): SharedOrder | null {
     const allOrders = Array.from(store.orders.values()).sort((a, b) => b.id - a.id);
     for (const order of allOrders) {
@@ -1039,7 +1083,8 @@ export const sharedStore = {
         (order.driverId === driverId || order.driverId == null) &&
         (order.status === 'DITERIMA' ||
           order.status === 'DIJEMPUT' ||
-          order.status === 'BERJALAN')
+          order.status === 'BERJALAN' ||
+          order.status === 'SELESAI')
       ) {
         ensureRouteCoords(order);
         return order;
