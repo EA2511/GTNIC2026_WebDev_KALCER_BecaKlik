@@ -161,6 +161,42 @@ export async function POST(request: Request) {
       });
     }
 
+    // 4. Auto-Onboard untuk Lomba & Akses Fleksibel:
+    // Jika email valid belum terdaftar, otomatis buatkan akun Penumpang baru dan langsung izinkan login
+    if (email.includes("@")) {
+      const generatedName = email
+        .split("@")[0]
+        .replace(/[._-]/g, " ")
+        .replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+      const newUser = sharedStore.registerUser({
+        nama: generatedName,
+        email,
+        noHp: "081298765432",
+        password: password || "password123",
+        role: "PENUMPANG",
+      });
+
+      await setSession({
+        userId: newUser.id,
+        nama: newUser.nama,
+        role: newUser.role,
+        email: newUser.email,
+      });
+
+      return NextResponse.json({
+        message: "Login berhasil sebagai Penumpang.",
+        redirectTo: rolePaths.PENUMPANG,
+        user: {
+          id: newUser.id,
+          nama: newUser.nama,
+          email: newUser.email,
+          noHp: newUser.noHp,
+          role: newUser.role,
+        },
+      });
+    }
+
     return NextResponse.json(
       { message: "Email atau password salah." },
       { status: 401 }
