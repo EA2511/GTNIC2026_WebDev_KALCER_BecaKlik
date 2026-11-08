@@ -1162,7 +1162,7 @@ export const sharedStore = {
     order.driverId = driverId;
     order.dismissedByDriver = false;
     order.dismissedByPassenger = false;
-    order.simulationProgress = 5;
+    order.simulationProgress = 0;
     order.lastStepAt = Date.now();
     const defaultVehicle = {
       kodeUnit: 'BL-001',
@@ -1223,38 +1223,37 @@ export const sharedStore = {
     }
 
     const now = Date.now();
-    if (!forceAdvance && order.lastStepAt && now - order.lastStepAt < 850) {
+    if (!forceAdvance && order.lastStepAt && now - order.lastStepAt < 900) {
       return order;
     }
     order.lastStepAt = now;
 
-    const currentProg = Math.max(5, Number(order.simulationProgress || 5));
-    const step = forceAdvance ? Math.max(25, deltaPercent) : Math.max(1, Math.min(10, deltaPercent));
+    const currentProg = Math.max(0, Number(order.simulationProgress || 0));
+    const step = forceAdvance ? 25 : Math.max(1, Math.min(2.5, deltaPercent));
     const nextProg = Math.min(100, currentProg + step);
 
     if (nextProg >= 100) {
       return this.updateOrderProgress(order.id, 100, 'SELESAI', lastPos, 0);
     }
 
-    if (nextProg < 24) {
-      const approachCoords = generatePickupApproachRoute(
-        order.jemputLat,
-        order.jemputLng,
-        coords[1]
-      );
-      const approachRatio = Math.min(100, (nextProg / 24) * 100);
-      const interp = interpolateRoutePosition(approachCoords, approachRatio);
-      const approachStatus = nextProg < 14 ? 'DITERIMA' : 'DIJEMPUT';
+    if (nextProg < 15) {
+      // 0 - 15%: Driver bersiap di titik jemput (tepat di awal rute jalan)
+      const startPos: LatLng = coords.length > 0 ? coords[0] : [order.jemputLat, order.jemputLng];
+      const startHeading = coords.length > 1
+        ? interpolateRoutePosition(coords, 0).heading
+        : 90;
+      const approachStatus = nextProg < 8 ? 'DITERIMA' : 'DIJEMPUT';
       return this.updateOrderProgress(
         order.id,
         nextProg,
         approachStatus,
-        interp.position,
-        interp.heading
+        startPos,
+        startHeading
       );
     }
 
-    const routeRatio = Math.max(0, Math.min(100, ((nextProg - 24) / 76) * 100));
+    // 15 - 99%: Driver meluncur mulus 100% tepat di atas garis rute jalan raya (coords) dari jemput menuju tujuan
+    const routeRatio = Math.max(0, Math.min(100, ((nextProg - 15) / 85) * 100));
     const interp = interpolateRoutePosition(coords, routeRatio);
     return this.updateOrderProgress(
       order.id,

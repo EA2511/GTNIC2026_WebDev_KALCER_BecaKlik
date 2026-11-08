@@ -748,7 +748,7 @@ function PelangganContent() {
 
   // Simulation playback for demonstration
   const [isSimulating, setIsSimulating] = useState(true);
-  const [simSpeed, setSimSpeed] = useState<number>(2); // Delta % per detik (halus & realistis)
+  const [simSpeed, setSimSpeed] = useState<number>(1.5); // Delta % per detik (halus & stabil)
   const simTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Rating & Tip State (Default Rp0 / Tanpa Tip agar mudah disesuaikan)
@@ -1937,16 +1937,10 @@ function PelangganContent() {
       if (prog >= 100) {
         return routeCoords[routeCoords.length - 1];
       }
-      if (prog < 20) {
-        const approachRoute = generatePickupApproachRoute(
-          activeOrder.jemputLat ?? -6.8362,
-          activeOrder.jemputLng ?? 108.2281,
-          routeCoords[1] || routeCoords[0]
-        );
-        const subProg = Math.min(100, Math.max(0, (prog / 20) * 100));
-        return interpolateRoutePosition(approachRoute, subProg).position;
+      if (prog < 15) {
+        return routeCoords[0];
       }
-      const tripProg = Math.min(100, Math.max(0, ((prog - 20) / 80) * 100));
+      const tripProg = Math.min(100, Math.max(0, ((prog - 15) / 85) * 100));
       return interpolateRoutePosition(routeCoords, tripProg).position;
     }
 
@@ -1968,16 +1962,12 @@ function PelangganContent() {
     if (!activeOrder) return 0;
     const prog = activeOrder.simulationProgress || 0;
     if (routeCoords && routeCoords.length > 0) {
-      if (prog < 20) {
-        const approachRoute = generatePickupApproachRoute(
-          activeOrder.jemputLat ?? -6.8362,
-          activeOrder.jemputLng ?? 108.2281,
-          routeCoords[1] || routeCoords[0]
-        );
-        const subProg = Math.min(100, Math.max(0, (prog / 20) * 100));
-        return interpolateRoutePosition(approachRoute, subProg).heading;
+      if (prog < 15) {
+        return routeCoords.length > 1
+          ? interpolateRoutePosition(routeCoords, 0).heading
+          : 0;
       }
-      const tripProg = Math.min(100, Math.max(0, ((prog - 20) / 80) * 100));
+      const tripProg = Math.min(100, Math.max(0, ((prog - 15) / 85) * 100));
       return interpolateRoutePosition(routeCoords, tripProg).heading;
     }
     return activeOrder.driver?.heading ?? 0;
@@ -5309,9 +5299,9 @@ function PelangganContent() {
                               </span>
                               <div style={{ display: "flex", gap: "4px" }}>
                                 {[
-                                  { label: "1x", val: 6 },
-                                  { label: "2x", val: 14 },
-                                  { label: "Instan", val: 35 },
+                                  { label: "1x Normal", val: 1.5 },
+                                  { label: "2x Cepat", val: 3 },
+                                  { label: "3x Kilat", val: 5 },
                                 ].map((speed) => (
                                   <button
                                     key={speed.label}

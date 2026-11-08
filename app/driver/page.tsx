@@ -782,8 +782,8 @@ export default function DriverPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: activeOrdId,
-            deltaPercent: 2,
-            currentProgress: activeOrder?.simulationProgress || 5,
+            deltaPercent: 1.5,
+            currentProgress: activeOrder?.simulationProgress || 0,
           }),
         });
         const data = await res.json().catch(() => null);
@@ -943,18 +943,13 @@ export default function DriverPage() {
     if (prog >= 100) {
       driverMapPos = routeCoords[routeCoords.length - 1];
       driverMapHeading = 0;
-    } else if (prog < 20) {
-      const approachRoute = generatePickupApproachRoute(
-        activeOrder.jemputLat ?? -6.8362,
-        activeOrder.jemputLng ?? 108.2281,
-        routeCoords[1] || routeCoords[0]
-      );
-      const subProg = Math.min(100, Math.max(0, (prog / 20) * 100));
-      const interp = interpolateRoutePosition(approachRoute, subProg);
-      driverMapPos = interp.position;
-      driverMapHeading = interp.heading;
+    } else if (prog < 15) {
+      driverMapPos = routeCoords[0];
+      driverMapHeading = routeCoords.length > 1
+        ? interpolateRoutePosition(routeCoords, 0).heading
+        : 0;
     } else {
-      const tripProg = Math.min(100, Math.max(0, ((prog - 20) / 80) * 100));
+      const tripProg = Math.min(100, Math.max(0, ((prog - 15) / 85) * 100));
       const interp = interpolateRoutePosition(routeCoords, tripProg);
       driverMapPos = interp.position;
       driverMapHeading = interp.heading;
