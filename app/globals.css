@@ -4988,15 +4988,25 @@ td:first-child {
   }
   .becak-position-wrap {
     bottom: 20px;
-    transform: translateX(-54%) scale(0.66);
+    transform: translateX(-56%) scale(0.64);
     transform-origin: bottom center;
   }
   .roadside-intersection-group {
-    left: calc(50% + 135px);
+    left: calc(50% + 52px);
   }
   .intersection-traffic-light {
-    transform: scale(0.85);
-    transform-origin: bottom center;
+    left: 8px;
+    bottom: 64px;
+    transform: scale(0.74);
+    transform-origin: bottom left;
+  }
+  .traffic-signpost-plate {
+    font-size: 8px;
+    padding: 2px 5px;
+    max-width: 82px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .floating-badge {
     display: none !important;
@@ -5014,19 +5024,29 @@ td:first-child {
 
 @media (max-width: 420px) {
   .stage-viewport {
-    height: 275px;
+    height: 285px;
   }
   .becak-position-wrap {
     bottom: 16px;
-    transform: translateX(-54%) scale(0.54);
+    transform: translateX(-58%) scale(0.52);
     transform-origin: bottom center;
   }
   .roadside-intersection-group {
-    left: calc(50% + 110px);
+    left: calc(50% + 40px);
   }
   .intersection-traffic-light {
-    transform: scale(0.72);
-    transform-origin: bottom center;
+    left: 6px;
+    bottom: 60px;
+    transform: scale(0.64);
+    transform-origin: bottom left;
+  }
+  .traffic-signpost-plate {
+    font-size: 7.5px;
+    padding: 1px 4px;
+    max-width: 72px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .floating-badge {
     display: none !important;
