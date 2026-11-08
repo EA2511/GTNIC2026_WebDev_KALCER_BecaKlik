@@ -759,6 +759,7 @@ function BaseInteractiveMap({
 
   return (
     <div
+      className="responsive-map-container"
       style={{
         position: 'relative',
         width: '100%',

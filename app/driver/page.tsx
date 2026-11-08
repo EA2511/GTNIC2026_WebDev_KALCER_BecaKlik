@@ -583,6 +583,17 @@ export default function DriverPage() {
         setAcceptNotification(
           `✓ Order ${data.order.kode} Berhasil Diambil! Segera meluncur ke ${data.order.jemputAlamat} untuk menjemput ${data.order.penumpangNama || "penumpang"}.`,
         );
+
+        // Broadcast langsung ke tab Penumpang
+        try {
+          const bc = new BroadcastChannel("becaklik_order_sync");
+          bc.postMessage({
+            type: "ORDER_ACCEPTED",
+            orderId,
+            order: data.order,
+          });
+          bc.close();
+        } catch {}
       }
       await loadDriverData();
     } catch (e) {
@@ -783,6 +794,29 @@ export default function DriverPage() {
       if (bc) bc.close();
     };
   }, [activeOrdId]);
+
+  // Sinkronisasi Order Masuk Lintas-Tab dari Penumpang (Instant Notification)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("becaklik_order_sync");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "NEW_ORDER" && event.data.order) {
+          const incoming: OrderInfo = event.data.order;
+          setIncomingOrders((prev) => {
+            if (prev.some((o) => o.id === incoming.id)) return prev;
+            playOrderChime();
+            return [incoming, ...prev];
+          });
+        }
+      };
+    } catch {}
+
+    return () => {
+      if (bc) bc.close();
+    };
+  }, []);
 
   // Dismiss Completed Trip and Return to Standby Queue (Instant & Race-Condition Safe)
   async function handleDismissOrder() {

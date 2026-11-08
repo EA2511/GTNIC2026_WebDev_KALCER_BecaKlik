@@ -5099,9 +5099,53 @@ td:first-child {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .service-class-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* Responsive Map Container on Mobile Devices */
+@media (max-width: 680px) {
+  .responsive-map-container,
+  .responsive-map-container > div:first-child {
+    height: 320px !important;
+    min-height: 280px !important;
+  }
+}
+
+/* Mobile Screen Typography & Padding Polish */
+@media (max-width: 640px) {
+  .site-header {
+    height: 64px !important;
+  }
+  .brand span {
+    font-size: 17px !important;
+  }
+  .brand small {
+    display: none !important;
+  }
+  .page-heading h1,
+  .dashboard-top h1 {
+    font-size: 26px !important;
+    letter-spacing: -1px !important;
+    line-height: 1.2 !important;
+  }
+  .page-heading p,
+  .dashboard-top p {
+    font-size: 12px !important;
+  }
+  .booking-panel {
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+  }
+  .panel {
+    padding: 16px 14px !important;
+  }
+  .responsive-modal-box {
+    padding: 18px 14px !important;
+    border-radius: 18px !important;
+    max-height: 94vh !important;
   }
 }
 

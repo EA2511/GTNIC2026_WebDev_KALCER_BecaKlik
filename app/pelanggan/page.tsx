@@ -1243,7 +1243,13 @@ function PelangganContent() {
       setActiveOrder(orderResult);
       if (typeof window !== "undefined") {
         localStorage.setItem("becak_active_order_id", String(orderResult.id));
+        localStorage.setItem("becak_active_order_data", JSON.stringify(orderResult));
       }
+      try {
+        const bc = new BroadcastChannel("becaklik_order_sync");
+        bc.postMessage({ type: "NEW_ORDER", order: orderResult });
+        bc.close();
+      } catch {}
       setSearchSeconds(0);
     } catch (e) {
       console.error("Payment handler fallback:", e);
@@ -1620,6 +1626,7 @@ function PelangganContent() {
   useEffect(() => {
     if (typeof window === "undefined" || !activeOrderId) return;
     let bc: BroadcastChannel | null = null;
+    let orderBc: BroadcastChannel | null = null;
     try {
       bc = new BroadcastChannel("becaklik_simulation_sync");
       bc.onmessage = (event) => {
@@ -1638,10 +1645,24 @@ function PelangganContent() {
           });
         }
       };
+
+      orderBc = new BroadcastChannel("becaklik_order_sync");
+      orderBc.onmessage = (event) => {
+        if (event.data?.type === "ORDER_ACCEPTED" && event.data.orderId === activeOrderId) {
+          if (event.data.order) {
+            setActiveOrder(event.data.order);
+          } else {
+            setActiveOrder((prev) => (prev ? { ...prev, status: "DITERIMA" } : null));
+          }
+          setIsSimulating(true);
+          showToast("✓ Mitra Driver Budi Santoso telah menerima pesanan Anda!");
+        }
+      };
     } catch {}
 
     return () => {
       if (bc) bc.close();
+      if (orderBc) orderBc.close();
     };
   }, [activeOrderId]);
 
