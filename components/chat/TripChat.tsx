@@ -236,6 +236,7 @@ export default function TripChat({
         flexDirection: 'column',
         width: '100%',
         maxWidth: '100%',
+        minWidth: 0,
         boxSizing: 'border-box',
         overflow: 'hidden',
         position: 'relative',
@@ -253,6 +254,10 @@ export default function TripChat({
           justifyContent: 'space-between',
           flexShrink: 0,
           gap: '8px',
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
@@ -469,6 +474,10 @@ export default function TripChat({
           flexShrink: 0,
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
         }}
       >
         {quickTemplates.map((template, idx) => (
@@ -512,6 +521,8 @@ export default function TripChat({
           alignItems: 'center',
           flexShrink: 0,
           width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
           boxSizing: 'border-box',
         }}
       >

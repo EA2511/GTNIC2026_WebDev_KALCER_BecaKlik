@@ -1873,6 +1873,11 @@ export default function DriverPage() {
                   padding: "20px",
                   boxShadow: "var(--shadow)",
                   alignSelf: "start",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  width: "100%",
+                  boxSizing: "border-box",
+                  overflow: "hidden",
                 }}
               >
                 {/* View Switcher: Navigasi Trip vs Chat Penumpang */}
@@ -1883,16 +1888,21 @@ export default function DriverPage() {
                     borderBottom: "1px solid #e2e8f0",
                     paddingBottom: "12px",
                     marginBottom: "16px",
+                    width: "100%",
+                    maxWidth: "100%",
+                    minWidth: 0,
+                    boxSizing: "border-box",
                   }}
                 >
                   <button
                     type="button"
                     onClick={() => setDriverTab("nav")}
                     style={{
-                      flex: 1,
+                      flex: "1 1 0%",
+                      minWidth: 0,
                       background: driverTab === "nav" ? "#0284c7" : "#f1f5f9",
                       color: driverTab === "nav" ? "#ffffff" : "#475569",
-                      padding: "9px 12px",
+                      padding: "9px 8px",
                       borderRadius: "10px",
                       border: "none",
                       fontSize: "12px",
@@ -1902,18 +1912,26 @@ export default function DriverPage() {
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "6px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      textAlign: "center",
                     }}
                   >
-                    <Route size={14} /> Navigasi & Status Trip
+                    <Route size={14} style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      Navigasi Trip
+                    </span>
                   </button>
                   <button
                     type="button"
                     onClick={switchToDriverChat}
                     style={{
-                      flex: 1,
+                      flex: "1 1 0%",
+                      minWidth: 0,
                       background: driverTab === "chat" ? "#0284c7" : "#f0f9ff",
                       color: driverTab === "chat" ? "#ffffff" : "#0284c7",
-                      padding: "9px 12px",
+                      padding: "9px 8px",
                       borderRadius: "10px",
                       border:
                         driverTab === "chat" ? "none" : "1px solid #bae6fd",
@@ -1924,9 +1942,16 @@ export default function DriverPage() {
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "6px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      textAlign: "center",
                     }}
                   >
-                    <MessageSquare size={14} /> Chat Penumpang
+                    <MessageSquare size={14} style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      Chat Penumpang
+                    </span>
                   </button>
                 </div>
 
@@ -1963,7 +1988,15 @@ export default function DriverPage() {
                 </div>
 
                 {driverTab === "chat" ? (
-                  <div>
+                  <div
+                    style={{
+                      minWidth: 0,
+                      maxWidth: "100%",
+                      width: "100%",
+                      boxSizing: "border-box",
+                      overflow: "hidden",
+                    }}
+                  >
                     <TripChat
                       orderId={activeOrder.id}
                       currentUserRole="DRIVER"
@@ -1978,6 +2011,9 @@ export default function DriverPage() {
                         marginTop: "12px",
                         fontSize: "12px",
                         padding: "10px",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        whiteSpace: "normal",
                       }}
                     >
                       ← Kembali ke Detail Navigasi Perjalanan

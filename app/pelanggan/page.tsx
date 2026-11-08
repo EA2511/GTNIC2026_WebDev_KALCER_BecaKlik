@@ -5006,6 +5006,10 @@ function PelangganContent() {
                   display: "flex",
                   flexDirection: "column",
                   gap: "16px",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
               >
                 <section
@@ -5017,6 +5021,11 @@ function PelangganContent() {
                     borderRadius: "18px",
                     padding: "20px",
                     boxShadow: "var(--shadow)",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    overflow: "hidden",
                   }}
                 >
                   {/* View Switch: Tracking vs Chat */}
@@ -5027,22 +5036,31 @@ function PelangganContent() {
                       borderBottom: "1px solid #e2e8f0",
                       paddingBottom: "12px",
                       marginBottom: "16px",
+                      width: "100%",
+                      maxWidth: "100%",
+                      minWidth: 0,
+                      boxSizing: "border-box",
                     }}
                   >
                     <button
                       type="button"
                       onClick={() => setActiveTab("tracking")}
                       style={{
-                        flex: 1,
+                        flex: "1 1 0%",
+                        minWidth: 0,
                         background:
                           activeTab === "tracking" ? "#0284c7" : "#f1f5f9",
                         color: activeTab === "tracking" ? "white" : "#475569",
-                        padding: "9px 12px",
+                        padding: "9px 8px",
                         borderRadius: "10px",
                         border: "none",
                         fontSize: "12px",
                         fontWeight: 800,
                         cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        textAlign: "center",
                       }}
                     >
                       Detail Driver & Rute
@@ -5051,17 +5069,22 @@ function PelangganContent() {
                       type="button"
                       onClick={switchToPassengerChat}
                       style={{
-                        flex: 1,
+                        flex: "1 1 0%",
+                        minWidth: 0,
                         background:
                           activeTab === "chat" ? "#0284c7" : "#f0f9ff",
                         color: activeTab === "chat" ? "white" : "#0284c7",
-                        padding: "9px 12px",
+                        padding: "9px 8px",
                         borderRadius: "10px",
                         border:
                           activeTab === "chat" ? "none" : "1px solid #bae6fd",
                         fontSize: "12px",
                         fontWeight: 800,
                         cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        textAlign: "center",
                       }}
                     >
                       Chat Mitra Driver
@@ -5900,13 +5923,25 @@ function PelangganContent() {
                     </div>
                   ) : (
                     /* Live Trip Chat */
-                    <div>
+                    <div
+                      style={{
+                        minWidth: 0,
+                        maxWidth: "100%",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        overflow: "hidden",
+                      }}
+                    >
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
                           marginBottom: "12px",
+                          width: "100%",
+                          maxWidth: "100%",
+                          minWidth: 0,
+                          boxSizing: "border-box",
                         }}
                       >
                         <span
@@ -5950,6 +5985,10 @@ function PelangganContent() {
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "6px",
+                          width: "100%",
+                          maxWidth: "100%",
+                          boxSizing: "border-box",
+                          whiteSpace: "normal",
                           background: "#ffffff",
                           borderColor: "#cbd5e1",
                           color: "#334155",

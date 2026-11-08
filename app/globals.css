@@ -4851,10 +4851,14 @@ td:first-child {
   grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
   gap: 20px;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 @media (max-width: 980px) {
   .trip-tracking-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) !important;
     gap: 16px;
   }
 }
@@ -4872,10 +4876,14 @@ td:first-child {
   grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
   gap: 20px;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 @media (max-width: 980px) {
   .driver-active-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) !important;
     gap: 16px;
   }
 }
@@ -5258,12 +5266,24 @@ td:first-child {
   font-size: 16px !important; /* Critical: Stops iOS Safari viewport auto-zoom */
 }
 
+.driver-action-panel,
+.passenger-cockpit-panel {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
 @media (max-width: 768px) {
   .driver-action-panel,
   .passenger-cockpit-panel {
     padding: 12px 10px !important;
     border-radius: 16px !important;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .trip-chat-container {
@@ -5272,32 +5292,61 @@ td:first-child {
     min-height: 400px !important;
     border-radius: 14px !important;
     box-shadow: 0 2px 12px rgba(2, 132, 199, 0.08) !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .trip-chat-header {
     padding: 10px 12px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .trip-chat-messages {
     flex: 1 1 0% !important;
     min-height: 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
     padding: 12px 10px !important;
     gap: 8px !important;
+    box-sizing: border-box !important;
   }
 
   .trip-chat-presets {
     padding: 7px 8px !important;
     gap: 6px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .trip-chat-presets button {
     padding: 6px 11px !important;
     font-size: 11px !important;
+    flex-shrink: 0 !important;
   }
 
   .trip-chat-form {
     padding: 8px 10px !important;
     gap: 8px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .trip-chat-form input {
+    min-width: 0 !important;
+    box-sizing: border-box !important;
   }
 
   .floating-chat-pill {
