@@ -2062,6 +2062,7 @@ export default function DriverPage() {
                     onClick={switchToDriverNav}
                     style={{
                       flex: "1 1 0%",
+                      width: 0,
                       minWidth: 0,
                       background: driverTab === "nav" ? "#0284c7" : "#f1f5f9",
                       color: driverTab === "nav" ? "#ffffff" : "#475569",
@@ -2091,6 +2092,7 @@ export default function DriverPage() {
                     onClick={switchToDriverChat}
                     style={{
                       flex: "1 1 0%",
+                      width: 0,
                       minWidth: 0,
                       background: driverTab === "chat" ? "#0284c7" : "#f0f9ff",
                       color: driverTab === "chat" ? "#ffffff" : "#0284c7",

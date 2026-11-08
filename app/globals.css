@@ -29,7 +29,8 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 body {
@@ -39,7 +40,8 @@ body {
   font-family: "DM Sans", sans-serif;
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 a {
@@ -4856,19 +4858,6 @@ td:first-child {
   min-width: 0;
   box-sizing: border-box;
 }
-@media (max-width: 980px) {
-  .trip-tracking-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 768px) {
-  /* Saat mode chat aktif di HP: sembunyikan peta 470px agar kolom chat langsung tampil di posisi atas layar HP */
-  .chat-active-mobile-map {
-    display: none !important;
-  }
-}
 
 /* 4. Driver Cockpit: Map vs Action Panel */
 .driver-active-grid {
@@ -4881,10 +4870,31 @@ td:first-child {
   min-width: 0;
   box-sizing: border-box;
 }
+
 @media (max-width: 980px) {
+  .trip-tracking-grid,
   .driver-active-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 16px;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 16px !important;
+  }
+
+  .passenger-map-column,
+  .driver-map-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Saat mode chat aktif di HP: sembunyikan peta 470px agar kolom chat langsung tampil di posisi atas layar HP */
+  .chat-active-mobile-map {
+    display: none !important;
   }
 }
 
@@ -5274,9 +5284,22 @@ td:first-child {
 }
 
 @media (max-width: 768px) {
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: clip !important;
+  }
+
+  .container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    box-sizing: border-box !important;
+  }
+
   .driver-action-panel,
   .passenger-cockpit-panel {
-    padding: 12px 10px !important;
+    padding: 14px 12px !important;
     border-radius: 16px !important;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
     min-width: 0 !important;
@@ -5287,9 +5310,9 @@ td:first-child {
   }
 
   .trip-chat-container {
-    height: calc(100dvh - 210px) !important;
-    max-height: 640px !important;
-    min-height: 400px !important;
+    height: calc(100dvh - 220px) !important;
+    max-height: 600px !important;
+    min-height: 380px !important;
     border-radius: 14px !important;
     box-shadow: 0 2px 12px rgba(2, 132, 199, 0.08) !important;
     min-width: 0 !important;
@@ -5342,11 +5365,27 @@ td:first-child {
     max-width: 100% !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
   }
 
   .trip-chat-form input {
+    flex: 1 1 0% !important;
+    width: 0 !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
+  }
+
+  .trip-chat-form button {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    flex-shrink: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .floating-chat-pill {

@@ -559,9 +559,9 @@ export default function TripChat({
           }
           maxLength={500}
           style={{
-            flex: 1,
+            flex: '1 1 0%',
             minWidth: 0,
-            width: '100%',
+            width: 0,
             height: '42px',
             padding: '0 16px',
             borderRadius: '999px',
@@ -583,6 +583,8 @@ export default function TripChat({
           style={{
             width: '42px',
             height: '42px',
+            minWidth: '42px',
+            maxWidth: '42px',
             borderRadius: '50%',
             background: !inputText.trim() || loading ? '#cbd5e1' : '#0284c7',
             color: '#ffffff',

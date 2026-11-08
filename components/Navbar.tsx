@@ -66,6 +66,10 @@ export function Navbar() {
           fontWeight: 700,
           padding: '6px 0',
           letterSpacing: '0.3px',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
         }}
       >
         <div
@@ -76,9 +80,12 @@ export function Navbar() {
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '8px',
+            minWidth: 0,
+            maxWidth: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
             <span
               style={{
                 display: 'inline-block',
@@ -87,13 +94,16 @@ export function Navbar() {
                 borderRadius: '50%',
                 background: '#4ade80',
                 boxShadow: '0 0 8px #4ade80',
+                flexShrink: 0,
               }}
             />
-            <span>PANGKALAN ALUN-ALUN MAJALENGKA · 5 ARMADA BECAK LISTRIK SIAGA</span>
+            <span style={{ wordBreak: 'break-word', minWidth: 0 }}>
+              PANGKALAN ALUN-ALUN MAJALENGKA · 5 ARMADA BECAK LISTRIK SIAGA
+            </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ color: '#bae6fd' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
+            <span style={{ color: '#bae6fd', wordBreak: 'break-word', minWidth: 0 }}>
               Kawasan Heritage Kota Majalengka
             </span>
           </div>

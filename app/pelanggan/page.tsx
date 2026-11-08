@@ -968,6 +968,7 @@ function PelangganContent() {
             return;
           } else {
             localStorage.removeItem("becak_active_order_id");
+            localStorage.removeItem("becak_active_order_data");
           }
         }
       } catch (err) {
@@ -986,8 +987,10 @@ function PelangganContent() {
     const ONGOING = ["MENCARI_DRIVER", "DITERIMA", "DIJEMPUT", "BERJALAN"];
     if (activeOrder && ONGOING.includes(activeOrder.status)) {
       localStorage.setItem("becak_active_order_id", String(activeOrder.id));
+      localStorage.setItem("becak_active_order_data", JSON.stringify(activeOrder));
     } else {
       localStorage.removeItem("becak_active_order_id");
+      localStorage.removeItem("becak_active_order_data");
     }
   }, [activeOrder]);
 
@@ -1399,6 +1402,7 @@ function PelangganContent() {
           if (data.order.status === "DIBATALKAN") {
             if (typeof window !== "undefined") {
               localStorage.removeItem("becak_active_order_id");
+              localStorage.removeItem("becak_active_order_data");
             }
             setActiveOrder(null);
             setIsSimulating(false);
@@ -1444,6 +1448,7 @@ function PelangganContent() {
           if (data.order.status === "DIBATALKAN") {
             if (typeof window !== "undefined") {
               localStorage.removeItem("becak_active_order_id");
+              localStorage.removeItem("becak_active_order_data");
             }
             setActiveOrder(null);
             setIsSimulating(false);
@@ -1813,6 +1818,7 @@ function PelangganContent() {
     }
     if (typeof window !== "undefined") {
       localStorage.removeItem("becak_active_order_id");
+      localStorage.removeItem("becak_active_order_data");
     }
     setActiveOrder(null);
     setSearchSeconds(0);
@@ -1961,6 +1967,7 @@ function PelangganContent() {
           JSON.stringify(next),
         );
         localStorage.removeItem("becak_active_order_id");
+        localStorage.removeItem("becak_active_order_data");
       }
       return next;
     });
@@ -2016,6 +2023,7 @@ function PelangganContent() {
     }
     if (typeof window !== "undefined") {
       localStorage.removeItem("becak_active_order_id");
+      localStorage.removeItem("becak_active_order_data");
     }
     setActiveOrder(null);
     setActiveTab("tracking");
@@ -4869,7 +4877,7 @@ function PelangganContent() {
                 background: "#ffffff",
                 border: "1px solid #e2e8f0",
                 borderRadius: "16px",
-                padding: "16px 22px",
+                padding: "14px 16px",
                 marginBottom: "16px",
                 display: "flex",
                 alignItems: "center",
@@ -4877,31 +4885,46 @@ function PelangganContent() {
                 flexWrap: "wrap",
                 gap: "12px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
               }}
             >
               <div
-                style={{ display: "flex", alignItems: "center", gap: "14px" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  flex: "1 1 240px",
+                  flexWrap: "wrap",
+                }}
               >
                 <div
                   style={{
-                    width: "46px",
-                    height: "46px",
+                    width: "42px",
+                    height: "42px",
                     borderRadius: "12px",
                     background: "#f0f9ff",
                     color: "#0284c7",
                     display: "grid",
                     placeItems: "center",
                     border: "1px solid #bae6fd",
+                    flexShrink: 0,
                   }}
                 >
-                  <Bike size={24} />
+                  <Bike size={22} />
                 </div>
-                <div>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "8px",
+                      gap: "6px",
+                      flexWrap: "wrap",
+                      minWidth: 0,
                     }}
                   >
                     <span
@@ -4911,6 +4934,7 @@ function PelangganContent() {
                         color: "#0284c7",
                         textTransform: "uppercase",
                         letterSpacing: "0.5px",
+                        wordBreak: "break-word",
                       }}
                     >
                       LIVE TRACKING · {activeOrder.kode}
@@ -4926,6 +4950,8 @@ function PelangganContent() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "4px",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
                       }}
                     >
                       <CheckCircle2 size={12} />{" "}
@@ -4936,10 +4962,11 @@ function PelangganContent() {
                   </div>
                   <h2
                     style={{
-                      fontSize: "18px",
+                      fontSize: "16px",
                       margin: "4px 0 0",
                       color: "#0f172a",
                       fontWeight: 800,
+                      wordBreak: "break-word",
                     }}
                   >
                     {activeOrder.status === "DITERIMA" &&
@@ -4961,8 +4988,10 @@ function PelangganContent() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
+                  gap: "8px",
                   flexWrap: "wrap",
+                  minWidth: 0,
+                  maxWidth: "100%",
                 }}
               >
                 <button
@@ -5204,6 +5233,7 @@ function PelangganContent() {
                       onClick={switchToPassengerTracking}
                       style={{
                         flex: "1 1 0%",
+                        width: 0,
                         minWidth: 0,
                         background:
                           activeTab === "tracking" ? "#0284c7" : "#f1f5f9",
@@ -5227,6 +5257,7 @@ function PelangganContent() {
                       onClick={switchToPassengerChat}
                       style={{
                         flex: "1 1 0%",
+                        width: 0,
                         minWidth: 0,
                         background:
                           activeTab === "chat" ? "#0284c7" : "#f0f9ff",
