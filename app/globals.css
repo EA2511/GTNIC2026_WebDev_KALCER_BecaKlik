@@ -5184,9 +5184,9 @@ td:first-child {
   }
 }
 
-/* Smooth 60fps Leaflet Vehicle Marker Glide Animation */
-.leaflet-container:not(.leaflet-zoom-anim) .leaflet-marker-icon.active-becak-marker {
-  transition: transform 0.85s linear;
+/* Leaflet Vehicle Marker: Rigid GPS lock without delayed drift during map panning */
+.leaflet-container .leaflet-marker-icon.active-becak-marker {
+  transition: none !important;
 }
 
 /* ============================================================== */

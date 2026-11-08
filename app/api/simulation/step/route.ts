@@ -84,17 +84,19 @@ export async function POST(request: Request) {
         : [updatedOrder.jemputLat, updatedOrder.jemputLng];
       const currentHeading = updatedOrder.driver?.heading ?? 0;
 
-      // 2. Sinkronkan ke Prisma secara non-blocking jika DB online
-      void prisma.order
-        .update({
+      // 2. Sinkronkan ke Prisma secara AWAITED agar data di database selalu terupdate sebelum serverless worker berakhir
+      try {
+        await prisma.order.update({
           where: { id: oId },
           data: {
             status: updatedOrder.status,
             simulationProgress: updatedOrder.simulationProgress,
             ...(updatedOrder.status === "SELESAI" ? { completedAt: new Date() } : {}),
           },
-        })
-        .catch(() => {});
+        });
+      } catch {
+        // DB offline / timeout
+      }
 
       const message =
         updatedOrder.status === "SELESAI"

@@ -754,10 +754,20 @@ function PelangganContent() {
     }, 60);
   };
 
+  const switchToPassengerTracking = () => {
+    setActiveTab("tracking");
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, 80);
+    }
+  };
+
   // Simulation playback for demonstration
   const [isSimulating, setIsSimulating] = useState(true);
   const [simSpeed, setSimSpeed] = useState<number>(1.5); // Delta % per detik (halus & stabil)
   const simTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeOrderProgressRef = useRef<number>(0);
 
   // Rating & Tip State (Default Rp0 / Tanpa Tip agar mudah disesuaikan)
   const [ratingScore, setRatingScore] = useState(5);
@@ -1444,6 +1454,7 @@ function PelangganContent() {
   };
 
   // Simulation ticker: Menggerakkan driver di jalan raya Majalengka begitu terhubung (Sinkron 100% dengan Driver)
+  activeOrderProgressRef.current = activeOrder?.simulationProgress || 0;
   const tickSimulation = useCallback(async () => {
     if (!activeOrderId) return;
     try {
@@ -1463,7 +1474,7 @@ function PelangganContent() {
           body: JSON.stringify({
             orderId: activeOrderId,
             deltaPercent: simSpeed,
-            currentProgress: activeOrder?.simulationProgress || 0,
+            currentProgress: activeOrderProgressRef.current,
           }),
         });
         stepData = await stepRes.json().catch(() => null);
@@ -4948,6 +4959,7 @@ function PelangganContent() {
                         : [-6.8362, 108.2281]
                   }
                   zoom={15}
+                  autoFitRoute={true}
                   pickupLocation={
                     activeOrder.jemputLat && activeOrder.jemputLng
                       ? [activeOrder.jemputLat, activeOrder.jemputLng]
@@ -5044,7 +5056,7 @@ function PelangganContent() {
                   >
                     <button
                       type="button"
-                      onClick={() => setActiveTab("tracking")}
+                      onClick={switchToPassengerTracking}
                       style={{
                         flex: "1 1 0%",
                         minWidth: 0,
@@ -5975,7 +5987,7 @@ function PelangganContent() {
                       />
                       <button
                         type="button"
-                        onClick={() => setActiveTab("tracking")}
+                        onClick={switchToPassengerTracking}
                         className="button button-outline button-full"
                         style={{
                           marginTop: "12px",

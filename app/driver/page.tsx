@@ -394,6 +394,7 @@ export default function DriverPage() {
   const prevIncomingCountRef = useRef(0);
   const prevTipRef = useRef(0);
   const dismissedOrderIdRef = useRef<number | null>(null);
+  const activeOrderProgressRef = useRef<number>(0);
   const rejectedOrderIdsRef = useRef<Set<number>>(new Set());
   const chimedOrderIdsRef = useRef<Set<number>>(new Set());
 
@@ -822,6 +823,8 @@ export default function DriverPage() {
   // Automatic Real-Time Simulation Sync on Driver Page (Tidak perlu klik manual terus-menerus)
   const activeOrdId = activeOrder?.id;
   const activeOrdStatus = activeOrder?.status;
+  activeOrderProgressRef.current = activeOrder?.simulationProgress || 0;
+
   useEffect(() => {
     if (
       !activeOrdId ||
@@ -841,7 +844,7 @@ export default function DriverPage() {
           body: JSON.stringify({
             orderId: activeOrdId,
             deltaPercent: 1.5,
-            currentProgress: activeOrder?.simulationProgress || 0,
+            currentProgress: activeOrderProgressRef.current,
           }),
         });
         const data = await res.json().catch(() => null);
@@ -1009,6 +1012,15 @@ export default function DriverPage() {
     setTimeout(() => {
       document.getElementById("driver-chat-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 60);
+  };
+
+  const switchToDriverNav = () => {
+    setDriverTab("nav");
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, 80);
+    }
   };
 
   // Parse Route coordinates for driver's map
@@ -1793,6 +1805,7 @@ export default function DriverPage() {
             <MapWrapper
               center={driverMapPos}
               zoom={15}
+              autoFitRoute={true}
               pickupLocation={
                 activeOrder
                   ? activeOrder.jemputLat && activeOrder.jemputLng
@@ -1896,7 +1909,7 @@ export default function DriverPage() {
                 >
                   <button
                     type="button"
-                    onClick={() => setDriverTab("nav")}
+                    onClick={switchToDriverNav}
                     style={{
                       flex: "1 1 0%",
                       minWidth: 0,
@@ -2005,7 +2018,7 @@ export default function DriverPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => setDriverTab("nav")}
+                      onClick={switchToDriverNav}
                       className="button button-outline button-full"
                       style={{
                         marginTop: "12px",

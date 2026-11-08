@@ -563,9 +563,13 @@ function BaseInteractiveMap({
       driverMarkerRef.current.setLatLng(driverLocation);
       const el = driverMarkerRef.current.getElement();
       const arrow = el?.querySelector<HTMLElement>('.active-becak-compass');
-      if (arrow && driverHeading !== driverHeadingRef.current) {
-        arrow.style.transform = `rotate(${driverHeading}deg)`;
-        driverHeadingRef.current = driverHeading;
+      if (arrow && typeof driverHeading === 'number') {
+        const currentAngle = driverHeadingRef.current || 0;
+        // Hitung selisih sudut terkecil (-180 s/d +180) agar rotasi kompas selalu mengambil jalur terpendek tanpa muter 360 derajat
+        const diff = (((driverHeading - currentAngle) % 360) + 540) % 360 - 180;
+        const targetAngle = currentAngle + diff;
+        arrow.style.transform = `rotate(${targetAngle}deg)`;
+        driverHeadingRef.current = targetAngle;
       }
     } else {
       const vehicleHtml = `

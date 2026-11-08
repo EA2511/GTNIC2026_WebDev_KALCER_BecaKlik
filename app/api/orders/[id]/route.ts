@@ -76,15 +76,15 @@ export async function PATCH(
     // Driver Menerima Order
     if (action === "ACCEPT" || action === "ACCEPT_ORDER") {
       const accepted = sharedStore.acceptOrder(orderId, Number(driverId) || 1, orderData);
-      void prisma.order
-        .update({
+      try {
+        await prisma.order.update({
           where: { id: orderId },
           data: {
             status: "DITERIMA",
             driverId: Number(driverId) || 1,
           },
-        })
-        .catch(() => {});
+        });
+      } catch {}
       return NextResponse.json({ success: true, order: accepted });
     }
 
@@ -102,16 +102,16 @@ export async function PATCH(
         sharedStore.updateOrderProgress(order.id, 100, "SELESAI", [order.tujuanLat, order.tujuanLng], 0);
       }
       const now = new Date();
-      void prisma.order
-        .update({
+      try {
+        await prisma.order.update({
           where: { id: orderId },
           data: {
             status: "SELESAI",
             simulationProgress: 100,
             completedAt: now,
           },
-        })
-        .catch(() => {});
+        });
+      } catch {}
       const updated = sharedStore.getOrder(orderId) || order;
       return NextResponse.json({ success: true, message: "Pesanan selesai di tujuan.", order: updated });
     }
