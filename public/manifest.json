@@ -1,0 +1,23 @@
+{
+  "name": "BecaKlik Majalengka",
+  "short_name": "BecaKlik",
+  "description": "BecaKlik: Platform layanan transportasi dan manajemen pangkalan becak listrik terintegrasi di Kabupaten Majalengka.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0284c7",
+  "background_color": "#ffffff",
+  "lang": "id",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/logo-becaklik.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["transportation", "travel", "utilities"],
+  "screenshots": []
+}
+

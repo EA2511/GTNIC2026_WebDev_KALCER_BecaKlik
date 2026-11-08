@@ -1,0 +1,330 @@
+// =====================================================
+// Skema database: Becak Listrik Mobility Platform (LajuKota)
+// Stack: Next.js + Prisma 6 + MySQL
+// Terintegrasi Spasial, Simulasi Rute, Dispatch FIFO, Promo & In-App Chat
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- ENUM (Pilihan Nilai Tetap) ----------
+
+enum Role {
+  ADMIN      // Pemilik / Pengelola pangkalan armada
+  DRIVER     // Mitra pengemudi becak listrik
+  PENUMPANG  // Pelanggan / Turis / Penumpang
+}
+
+enum DriverStatus {
+  OFFLINE
+  ONLINE
+  ON_TRIP
+}
+
+enum VehicleStatus {
+  TERSEDIA
+  DIPAKAI
+  CHARGING
+  SERVIS
+}
+
+enum QueueStatus {
+  MENUNGGU   // Antre menunggu pesanan (FIFO)
+  DILAYANI   // Mendapatkan dan menjalankan pesanan
+  SELESAI    // Selesai melayani perjalanan
+  KELUAR     // Keluar antrean sementara (offline)
+}
+
+enum OrderStatus {
+  MENCARI_DRIVER // Pesanan dibuat, menunggu alokasi driver
+  DITERIMA       // Driver ditugaskan dan mengonfirmasi
+  DIJEMPUT       // Driver bergerak menuju titik jemput
+  BERJALAN       // Penumpang sudah naik, menuju titik tujuan
+  SELESAI        // Tiba di tujuan dan transaksi rampung
+  DIBATALKAN     // Dibatalkan oleh pelanggan atau sistem
+}
+
+enum PaymentMethod {
+  TUNAI
+  QRIS
+}
+
+enum PaymentStatus {
+  BELUM_BAYAR
+  LUNAS
+}
+
+enum LogJenis {
+  CHARGING
+  SERVIS
+}
+
+// ---------- TABEL DOMAIN UTAMA ----------
+
+// Satu baris = Kawasan Pangkalan Operasional Becak Listrik
+model Pangkalan {
+  id         Int      @id @default(autoincrement())
+  nama       String   @db.VarChar(100)
+  alamat     String?  @db.VarChar(255)
+  lat        Float    @default(-7.7956) // Titik pusat zona pangkalan
+  lng        Float    @default(110.3658)
+  radiusKm   Float    @default(3.5)     // Radius jangkauan layanan aman
+  tarifDasar Int      @default(5000)    // Rupiah
+  tarifPerKm Int      @default(3000)    // Rupiah
+  createdAt  DateTime @default(now())
+
+  users         User[]
+  drivers       Driver[]
+  vehicles      Vehicle[]
+  queues        DriverQueue[]
+  orders        Order[]
+  servicePoints ServicePoint[]
+
+  @@map("pangkalan")
+}
+
+// Titik Penting (POI) dalam Zona Operasional Pangkalan
+model ServicePoint {
+  id          Int      @id @default(autoincrement())
+  pangkalanId Int
+  nama        String   @db.VarChar(100)
+  kategori    String   @default("WISATA") @db.VarChar(50) // STASIUN, WISATA, PASAR, HOTEL, DEPOT
+  alamat      String   @db.VarChar(255)
+  lat         Float
+  lng         Float
+  isDepot     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  pangkalan Pangkalan @relation(fields: [pangkalanId], references: [id])
+
+  @@index([pangkalanId])
+  @@map("service_points")
+}
+
+// Akun Pengguna (Admin, Driver, Penumpang)
+model User {
+  id                     Int           @id @default(autoincrement())
+  nama                   String        @db.VarChar(100)
+  email                  String        @unique @db.VarChar(120)
+  noHp                   String?       @db.VarChar(20)
+  passwordHash           String        @db.VarChar(255)
+  role                   Role
+  pangkalanId            Int?
+  hasCompletedOnboarding Boolean       @default(false)
+  avatarUrl              String?       @db.VarChar(255)
+  createdAt              DateTime      @default(now())
+
+  pangkalan   Pangkalan?    @relation(fields: [pangkalanId], references: [id])
+  driver      Driver?
+  orders      Order[]       @relation("OrderPenumpang")
+  chatMessages ChatMessage[] @relation("MessageSender")
+
+  @@index([role])
+  @@index([pangkalanId])
+  @@map("users")
+}
+
+// Profil Operasional Mitra Pengemudi
+model Driver {
+  id            Int          @id @default(autoincrement())
+  userId        Int          @unique
+  pangkalanId   Int
+  status        DriverStatus @default(OFFLINE)
+  currentLat    Float?       @default(-7.7956)
+  currentLng    Float?       @default(110.3658)
+  heading       Float?       @default(0) // Derajat putaran marker (0-360)
+  ratingAverage Float        @default(4.9)
+  totalTrips    Int          @default(0)
+  joinedAt      DateTime     @default(now())
+  avatarUrl     String?      @db.VarChar(255)
+  lastActiveAt  DateTime?    @default(now())
+  createdAt     DateTime     @default(now())
+
+  user      User          @relation(fields: [userId], references: [id])
+  pangkalan Pangkalan     @relation(fields: [pangkalanId], references: [id])
+  vehicle   Vehicle?
+  queues    DriverQueue[]
+  orders    Order[]
+
+  @@index([pangkalanId, status])
+  @@map("drivers")
+}
+
+// Armada Kendaraan Becak Listrik
+model Vehicle {
+  id          Int           @id @default(autoincrement())
+  pangkalanId Int
+  kodeUnit    String        @db.VarChar(20) // Contoh: BL-001
+  modelName   String        @default("Becak Listrik Heritage EV") @db.VarChar(100)
+  warna       String        @default("Forest Green & Lime") @db.VarChar(50)
+  kapasitas   Int           @default(2)
+  fotoUrl     String?       @db.VarChar(255)
+  status      VehicleStatus @default(TERSEDIA)
+  driverId    Int?          @unique
+  batteryPct  Int           @default(88)    // Tingkat baterai simulasi (%)
+  createdAt   DateTime      @default(now())
+
+  pangkalan Pangkalan @relation(fields: [pangkalanId], references: [id])
+  driver    Driver?   @relation(fields: [driverId], references: [id])
+  orders    Order[]
+  logs      LogUnit[]
+
+  @@unique([pangkalanId, kodeUnit])
+  @@map("vehicles")
+}
+
+// Antrean Driver Pangkalan (Algoritma FIFO)
+model DriverQueue {
+  id          Int         @id @default(autoincrement())
+  pangkalanId Int
+  driverId    Int
+  status      QueueStatus @default(MENUNGGU)
+  joinedAt    DateTime    @default(now())
+  servedAt    DateTime?
+
+  pangkalan Pangkalan @relation(fields: [pangkalanId], references: [id])
+  driver    Driver    @relation(fields: [driverId], references: [id])
+
+  @@index([pangkalanId, status, joinedAt])
+  @@map("driver_queue")
+}
+
+// Program Promo & Diskon Sambutan Pengguna Baru
+model Promo {
+  id               Int       @id @default(autoincrement())
+  kode             String    @unique @db.VarChar(50) // Contoh: BECAKBARU
+  judul            String    @db.VarChar(100)        // Diskon Pengguna Baru
+  deskripsi        String    @db.VarChar(255)
+  diskonPersen     Int       @default(20)            // 20%
+  maksimalDiskon   Int       @default(10000)         // Maksimal potongan Rp10.000
+  minimalTransaksi Int       @default(10000)         // Minimal transaksi Rp10.000
+  aktif            Boolean   @default(true)
+  berlakuHingga    DateTime?
+  createdAt        DateTime  @default(now())
+
+  orders Order[]
+
+  @@map("promos")
+}
+
+// Transaksi Pesanan & Perjalanan
+model Order {
+  id                 Int         @id @default(autoincrement())
+  kode               String      @unique @db.VarChar(30) // Contoh: ORD-20261028-001
+  pangkalanId        Int
+  penumpangId        Int
+  driverId           Int?
+  vehicleId          Int?
+  jemputAlamat       String      @db.VarChar(255)
+  jemputLat          Float?
+  jemputLng          Float?
+  tujuanAlamat       String      @db.VarChar(255)
+  tujuanLat          Float?
+  tujuanLng          Float?
+  jarakKm            Decimal     @db.Decimal(5, 2)
+  durasiMenit        Int         @default(10)
+  tarif              Int         // Snapshot tarif kotor sebelum diskon (Rupiah)
+  promoId            Int?
+  promoKode          String?     @db.VarChar(50)
+  diskon             Int         @default(0)   // Potongan rupiah promo
+  totalBayar         Int         @default(0)   // Tarif bersih setelah diskon (Rupiah)
+  status             OrderStatus @default(MENCARI_DRIVER)
+  routeGeometry      String?     @db.LongText  // Poliline koordinat rute JSON [[lat, lng], ...]
+  simulationProgress Float       @default(0)   // 0.0 - 100.0% progres rute
+  simulationStep     Int         @default(0)   // Indeks waypoint posisi aktif
+  alasanBatal        String?     @db.VarChar(255)
+  createdAt          DateTime    @default(now())
+  acceptedAt         DateTime?
+  completedAt        DateTime?
+
+  pangkalan    Pangkalan     @relation(fields: [pangkalanId], references: [id])
+  penumpang    User          @relation("OrderPenumpang", fields: [penumpangId], references: [id])
+  driver       Driver?       @relation(fields: [driverId], references: [id])
+  vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id])
+  promo        Promo?        @relation(fields: [promoId], references: [id])
+  payment      Payment?
+  rating       Rating?
+  chatMessages ChatMessage[]
+
+  @@index([pangkalanId, status, createdAt])
+  @@index([driverId, completedAt])
+  @@index([penumpangId])
+  @@map("orders")
+}
+
+// Komunikasi In-App Chat antara Penumpang dan Driver
+model ChatMessage {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  senderRole Role
+  senderId   Int
+  senderNama String   @db.VarChar(100)
+  pesan      String   @db.VarChar(500)
+  createdAt  DateTime @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender User  @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@map("chat_messages")
+}
+
+// Pembayaran Perjalanan
+model Payment {
+  id      Int           @id @default(autoincrement())
+  orderId Int           @unique
+  jumlah  Int           // Rupiah
+  metode  PaymentMethod @default(TUNAI)
+  status  PaymentStatus @default(BELUM_BAYAR)
+  paidAt  DateTime?
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+// Ulasan & Rating Layanan
+model Rating {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  skor      Int      // 1 sampai 5 bintang
+  kategori  String?  @db.VarChar(100) // Contoh: "Driver Ramah & Tepat Waktu"
+  komentar  String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("ratings")
+}
+
+// Log Pengisian Daya & Servis Armada
+model LogUnit {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int
+  jenis     LogJenis
+  catatan   String?  @db.VarChar(255)
+  biaya     Int      @default(0)
+  tanggal   DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, tanggal])
+  @@map("log_unit")
+}
+
+// Konfigurasi Sistem, Demo, & Parameter Emisi Karbon
+model SystemSetting {
+  id         Int      @id @default(autoincrement())
+  kunci      String   @unique @db.VarChar(50)
+  nilai      String   @db.Text
+  keterangan String?  @db.VarChar(255)
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("system_settings")
+}
