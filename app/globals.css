@@ -4859,6 +4859,13 @@ td:first-child {
   }
 }
 
+@media (max-width: 768px) {
+  /* Saat mode chat aktif di HP: sembunyikan peta 470px agar kolom chat langsung tampil di posisi atas layar HP */
+  .chat-active-mobile-map {
+    display: none !important;
+  }
+}
+
 /* 4. Driver Cockpit: Map vs Action Panel */
 .driver-active-grid {
   display: grid;
@@ -5251,43 +5258,46 @@ td:first-child {
   font-size: 16px !important; /* Critical: Stops iOS Safari viewport auto-zoom */
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .driver-action-panel,
   .passenger-cockpit-panel {
     padding: 12px 10px !important;
     border-radius: 16px !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
   }
 
   .trip-chat-container {
-    height: 440px !important;
-    max-height: calc(100dvh - 120px) !important;
-    min-height: 350px !important;
+    height: calc(100dvh - 210px) !important;
+    max-height: 640px !important;
+    min-height: 400px !important;
     border-radius: 14px !important;
     box-shadow: 0 2px 12px rgba(2, 132, 199, 0.08) !important;
   }
 
   .trip-chat-header {
-    padding: 8px 10px !important;
+    padding: 10px 12px !important;
   }
 
   .trip-chat-messages {
-    padding: 10px 8px !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    padding: 12px 10px !important;
     gap: 8px !important;
   }
 
   .trip-chat-presets {
-    padding: 6px 8px !important;
-    gap: 5px !important;
+    padding: 7px 8px !important;
+    gap: 6px !important;
   }
 
   .trip-chat-presets button {
-    padding: 5px 9px !important;
-    font-size: 10.5px !important;
+    padding: 6px 11px !important;
+    font-size: 11px !important;
   }
 
   .trip-chat-form {
-    padding: 8px 8px !important;
-    gap: 6px !important;
+    padding: 8px 10px !important;
+    gap: 8px !important;
   }
 
   .floating-chat-pill {
@@ -5295,9 +5305,9 @@ td:first-child {
   }
 }
 
-@media (max-height: 620px) and (max-width: 640px) {
+@media (max-height: 620px) and (max-width: 768px) {
   .trip-chat-container {
-    height: 340px !important;
+    height: 350px !important;
     min-height: 280px !important;
   }
 }

@@ -4887,6 +4887,7 @@ function PelangganContent() {
             <div className="trip-tracking-grid">
               {/* Full Interactive Road Map with Animated Moving Becak */}
               <div
+                className={`passenger-map-column ${activeTab === "chat" ? "chat-active-mobile-map" : ""}`}
                 style={{
                   background: "#ffffff",
                   borderRadius: "18px",
@@ -5900,6 +5901,37 @@ function PelangganContent() {
                   ) : (
                     /* Live Trip Chat */
                     <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            background: "#f0f9ff",
+                            color: "#0284c7",
+                            fontSize: "11px",
+                            fontWeight: 800,
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          LIVE CHAT · {activeOrder.kode}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            color: "#0284c7",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {Math.round(activeOrder.simulationProgress)}% Tempuh
+                        </span>
+                      </div>
                       <TripChat
                         orderId={activeOrder.id}
                         currentUserRole="PENUMPANG"

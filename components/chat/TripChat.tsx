@@ -344,7 +344,8 @@ export default function TripChat({
         ref={messagesContainerRef}
         className="trip-chat-messages"
         style={{
-          flex: 1,
+          flex: '1 1 0%',
+          minHeight: 0,
           padding: '12px 14px',
           overflowY: 'auto',
           display: 'flex',

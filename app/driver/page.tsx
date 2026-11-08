@@ -1734,6 +1734,7 @@ export default function DriverPage() {
         >
           {/* Left: Driver Operational & Route Map (Selalu Aktif & Responsif) */}
           <div
+            className={`driver-map-column ${driverTab === "chat" ? "chat-active-mobile-map" : ""}`}
             style={{
               background: "#ffffff",
               borderRadius: "18px",
