@@ -71,11 +71,11 @@ export async function PATCH(
     const { id } = await params;
     const orderId = Number(id);
     const body = await request.json().catch(() => ({}));
-    const { action, driverId, skor, kategori, komentar, tip } = body;
+    const { action, driverId, skor, kategori, komentar, tip, orderData } = body;
 
     // Driver Menerima Order
     if (action === "ACCEPT" || action === "ACCEPT_ORDER") {
-      const accepted = sharedStore.acceptOrder(orderId, Number(driverId) || 1);
+      const accepted = sharedStore.acceptOrder(orderId, Number(driverId) || 1, orderData);
       void prisma.order
         .update({
           where: { id: orderId },

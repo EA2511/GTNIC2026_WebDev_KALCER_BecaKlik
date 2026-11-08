@@ -1887,7 +1887,7 @@ function PelangganContent() {
 
   // Parse Route Geometry Coordinates
   let routeCoords: [number, number][] = [];
-  if (activeOrder?.routeGeometry) {
+  if (activeOrder?.routeGeometry && activeOrder.routeGeometry !== "[]") {
     try {
       routeCoords = JSON.parse(activeOrder.routeGeometry);
     } catch {
@@ -1896,6 +1896,20 @@ function PelangganContent() {
   }
   if (routeCoords.length === 0 && estimatedRoute) {
     routeCoords = estimatedRoute.coordinates;
+  }
+  if (
+    routeCoords.length === 0 &&
+    activeOrder?.jemputLat != null &&
+    activeOrder?.jemputLng != null &&
+    activeOrder?.tujuanLat != null &&
+    activeOrder?.tujuanLng != null
+  ) {
+    routeCoords = generateRoadCorridorFallback(
+      activeOrder.jemputLat,
+      activeOrder.jemputLng,
+      activeOrder.tujuanLat,
+      activeOrder.tujuanLng,
+    );
   }
 
   const driverPos: [number, number] | undefined = useMemo(() => {

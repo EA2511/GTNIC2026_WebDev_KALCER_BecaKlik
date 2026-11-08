@@ -9,6 +9,13 @@ import {
   type LatLng,
 } from './geo';
 import { calculateEcoImpact } from './eco';
+import {
+  SNAPSHOT_ORDERS,
+  SNAPSHOT_RATINGS,
+  SNAPSHOT_REGISTERED_USERS,
+  SNAPSHOT_FLEET_DRIVERS,
+  SNAPSHOT_DRIVER_STATS,
+} from './defaultStoreSnapshot';
 
 export interface SharedOrder {
   id: number;
@@ -787,31 +794,42 @@ const globalForStore = globalThis as unknown as { __shared_store__?: StoreData }
 
 if (!globalForStore.__shared_store__) {
   const cached = loadPersistedCache();
-  const mergedRatings = normalizeAndSortRatings(cached?.ratings || []);
-  const initialRegUsersMap = new Map<string, SharedRegisteredUser>(cached?.registeredUsers || []);
+  const rawRatings = cached?.ratings && cached.ratings.length > 0 ? cached.ratings : SNAPSHOT_RATINGS;
+  const mergedRatings = normalizeAndSortRatings(rawRatings);
+  
+  const userEntries =
+    cached?.registeredUsers && cached.registeredUsers.length > 0
+      ? cached.registeredUsers
+      : SNAPSHOT_REGISTERED_USERS;
+  const initialRegUsersMap = new Map<string, SharedRegisteredUser>(userEntries);
   for (const u of INITIAL_REGISTERED_USERS) {
     if (!initialRegUsersMap.has(u.email)) {
       initialRegUsersMap.set(u.email, u);
     }
   }
 
+  const initialOrdersEntries =
+    cached?.orders && cached.orders.length > 0 ? cached.orders : SNAPSHOT_ORDERS;
+
   globalForStore.__shared_store__ = {
-    orders: new Map<number, SharedOrder>(cached?.orders || []),
+    orders: new Map<number, SharedOrder>(initialOrdersEntries),
     chatMessages: new Map<number, SharedChatMessage[]>(cached?.chatMessages || []),
     registeredUsers: initialRegUsersMap,
     ratings: mergedRatings,
     fleetDrivers:
       cached?.fleetDrivers && cached.fleetDrivers.length >= 5
         ? cached.fleetDrivers
-        : INITIAL_FLEET_DRIVERS.map((d) => ({ ...d })),
-    syncedHistoryIds: new Set<number>(cached?.syncedHistoryIds || [990, 991, 1001]),
-    driverStatus: cached?.driverStatus || 'ONLINE',
-    driverRating: cached?.driverRating ?? 4.95,
-    driverTotalTrips: cached?.driverTotalTrips ?? 49,
-    driverCompletedToday: cached?.driverCompletedToday ?? 7,
-    driverEarningsToday: cached?.driverEarningsToday ?? 128490,
-    nextOrderId: cached?.nextOrderId ?? 1002,
-    nextUserId: 105,
+        : (SNAPSHOT_FLEET_DRIVERS.length >= 5 ? SNAPSHOT_FLEET_DRIVERS : INITIAL_FLEET_DRIVERS).map((d) => ({ ...d })),
+    syncedHistoryIds: new Set<number>(
+      cached?.syncedHistoryIds || SNAPSHOT_DRIVER_STATS.syncedHistoryIds || [990, 991, 1000, 1001]
+    ),
+    driverStatus: cached?.driverStatus || SNAPSHOT_DRIVER_STATS.driverStatus || 'ONLINE',
+    driverRating: cached?.driverRating ?? SNAPSHOT_DRIVER_STATS.driverRating ?? 4.95,
+    driverTotalTrips: cached?.driverTotalTrips ?? SNAPSHOT_DRIVER_STATS.driverTotalTrips ?? 63,
+    driverCompletedToday: cached?.driverCompletedToday ?? SNAPSHOT_DRIVER_STATS.driverCompletedToday ?? 21,
+    driverEarningsToday: cached?.driverEarningsToday ?? SNAPSHOT_DRIVER_STATS.driverEarningsToday ?? 425738,
+    nextOrderId: cached?.nextOrderId ?? SNAPSHOT_DRIVER_STATS.nextOrderId ?? 1016,
+    nextUserId: 110,
     nextChatId: 500,
   };
 }
@@ -1090,7 +1108,7 @@ export const sharedStore = {
   },
 
   // Driver Menerima Order (Transisi MENCARI_DRIVER -> DITERIMA)
-  acceptOrder(orderId: number, driverId = 1): SharedOrder | null {
+  acceptOrder(orderId: number, driverId = 1, fallbackData?: Partial<SharedOrder>): SharedOrder | null {
     let order = store.orders.get(orderId);
     if (!order) {
       for (const o of store.orders.values()) {
@@ -1099,6 +1117,36 @@ export const sharedStore = {
           break;
         }
       }
+    }
+    if (!order && fallbackData) {
+      order = {
+        id: Number(orderId),
+        kode: fallbackData.kode || `ORD-${orderId}`,
+        status: 'MENCARI_DRIVER',
+        jemputAlamat: fallbackData.jemputAlamat || 'Titik Jemput Majalengka',
+        jemputLat: Number(fallbackData.jemputLat) || -6.8362,
+        jemputLng: Number(fallbackData.jemputLng) || 108.2281,
+        tujuanAlamat: fallbackData.tujuanAlamat || 'Tujuan Majalengka',
+        tujuanLat: Number(fallbackData.tujuanLat) || -6.8295,
+        tujuanLng: Number(fallbackData.tujuanLng) || 108.2198,
+        penumpangNama: fallbackData.penumpangNama || 'Penumpang',
+        penumpangEmail: fallbackData.penumpangEmail || 'penumpang@becak.test',
+        penumpangNoHp: fallbackData.penumpangNoHp || '081298765432',
+        jarakKm: Number(fallbackData.jarakKm) || 2.5,
+        durasiMenit: Number(fallbackData.durasiMenit) || 10,
+        tarif: Number(fallbackData.tarif) || 10000,
+        diskon: Number(fallbackData.diskon) || 0,
+        totalBayar: Number(fallbackData.totalBayar) || 10000,
+        serviceType: fallbackData.serviceType || 'REGULER',
+        passengerCount: fallbackData.passengerCount || 1,
+        catatan: fallbackData.catatan,
+        metodePembayaran: fallbackData.metodePembayaran || 'QRIS',
+        simulationProgress: 5,
+        routeGeometry: fallbackData.routeGeometry || '[]',
+        driverId: driverId,
+        createdAt: fallbackData.createdAt || new Date().toISOString(),
+      };
+      store.orders.set(order.id, order);
     }
     if (!order) {
       const incoming = this.getIncomingOrders();

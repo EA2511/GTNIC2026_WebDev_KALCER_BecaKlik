@@ -91,7 +91,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { driverId, action, status: requestedStatus, orderId, trips } = body;
+    const { driverId, action, status: requestedStatus, orderId, trips, orderData } = body;
 
     const id = Number(driverId) || 1;
 
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     }
 
     if (action === "ACCEPT_ORDER" && orderId) {
-      const accepted = sharedStore.acceptOrder(Number(orderId), id);
+      const accepted = sharedStore.acceptOrder(Number(orderId), id, orderData);
       void prisma.order
         .update({
           where: { id: Number(orderId) },
