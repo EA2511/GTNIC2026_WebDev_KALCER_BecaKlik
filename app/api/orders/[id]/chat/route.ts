@@ -18,8 +18,29 @@ export async function GET(
     }
 
     // Ambil pesan real-time langsung dari sharedStore (Instan < 1ms & sinkron antara Pelanggan dan Driver)
-    const sharedMessages = sharedStore.getChatMessages(orderId);
-    return NextResponse.json({ messages: sharedMessages });
+    let sharedMessages = sharedStore.getChatMessages(orderId);
+    if (!sharedMessages || sharedMessages.length === 0) {
+      try {
+        const dbMsgs = await prisma.chatMessage.findMany({
+          where: { orderId },
+          orderBy: { createdAt: "asc" },
+        });
+        if (dbMsgs && dbMsgs.length > 0) {
+          sharedMessages = dbMsgs.map((m) => ({
+            id: m.id,
+            orderId: m.orderId,
+            senderRole: m.senderRole as "PENUMPANG" | "DRIVER" | "ADMIN",
+            senderId: m.senderId ?? undefined,
+            senderNama: m.senderNama,
+            pesan: m.pesan,
+            createdAt: m.createdAt.toISOString(),
+          }));
+        }
+      } catch {
+        // ignore db query error
+      }
+    }
+    return NextResponse.json({ messages: sharedMessages || [] });
   } catch (error) {
     console.error("Error in GET /api/orders/[id]/chat:", error);
     return NextResponse.json({ messages: [] });

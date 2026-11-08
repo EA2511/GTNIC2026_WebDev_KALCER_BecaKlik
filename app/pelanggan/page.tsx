@@ -51,6 +51,7 @@ import TripChat from "@/components/chat/TripChat";
 import {
   interpolateRoutePosition,
   generateRoadCorridorFallback,
+  generatePickupApproachRoute,
   getRoadRoute,
 } from "@/lib/geo";
 import {
@@ -1371,7 +1372,14 @@ function PelangganContent() {
               ...data.order,
               simulationProgress: updatedProg,
               status: data.order.status,
-              driver: data.order.driver || prev.driver,
+              driver: data.order.driver
+                ? {
+                    ...data.order.driver,
+                    currentLat: prev.driver?.currentLat ?? data.order.driver.currentLat,
+                    currentLng: prev.driver?.currentLng ?? data.order.driver.currentLng,
+                    heading: prev.driver?.heading ?? data.order.driver.heading,
+                  }
+                : prev.driver,
             };
           });
         }
@@ -1448,6 +1456,7 @@ function PelangganContent() {
           body: JSON.stringify({
             orderId: activeOrderId,
             deltaPercent: simSpeed,
+            currentProgress: activeOrder?.simulationProgress || 0,
           }),
         });
         stepData = await stepRes.json().catch(() => null);
@@ -1508,6 +1517,18 @@ function PelangganContent() {
         } else {
           newStatus = "BERJALAN";
         }
+
+        // Sinkronisasi realtime ke tab Cockpit Driver jika dibuka bersamaan
+        try {
+          const bc = new BroadcastChannel("becaklik_simulation_sync");
+          bc.postMessage({
+            type: "SIM_PROGRESS",
+            orderId: activeOrderId,
+            progress: safeProgress,
+            status: newStatus,
+          });
+          bc.close();
+        } catch {}
 
         const sLat = prev.jemputLat;
         const sLng = prev.jemputLng;
@@ -1594,6 +1615,35 @@ function PelangganContent() {
       if (simTimerRef.current) clearInterval(simTimerRef.current);
     };
   }, [activeOrderId, activeOrderStatus, isSimulating, tickSimulation]);
+
+  // Sinkronisasi Lintas-Tab Driver <-> Penumpang (Zero Latency Lockstep)
+  useEffect(() => {
+    if (typeof window === "undefined" || !activeOrderId) return;
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("becaklik_simulation_sync");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "SIM_PROGRESS" && event.data.orderId === activeOrderId) {
+          const incomingProg = Number(event.data.progress || 0);
+          setActiveOrder((prev) => {
+            if (!prev || prev.id !== activeOrderId) return prev;
+            if (prev.status === "SELESAI") return prev;
+            const safeProg = Math.max(prev.simulationProgress || 0, incomingProg);
+            const newStatus = event.data.status || (safeProg >= 100 ? "SELESAI" : prev.status);
+            return {
+              ...prev,
+              simulationProgress: safeProg,
+              status: newStatus,
+            };
+          });
+        }
+      };
+    } catch {}
+
+    return () => {
+      if (bc) bc.close();
+    };
+  }, [activeOrderId]);
 
   // Cancel Active Order (Saat MENCARI_DRIVER atau sebelum perjalanan berjalan)
   const handleCancelOrder = async () => {
@@ -1827,10 +1877,65 @@ function PelangganContent() {
     routeCoords = estimatedRoute.coordinates;
   }
 
-  const driverPos: [number, number] | undefined =
-    activeOrder?.driver?.currentLat && activeOrder?.driver?.currentLng
-      ? [activeOrder.driver.currentLat, activeOrder.driver.currentLng]
-      : undefined;
+  const driverPos: [number, number] | undefined = useMemo(() => {
+    if (!activeOrder) return undefined;
+    const prog = activeOrder.simulationProgress || 0;
+
+    if (routeCoords && routeCoords.length > 0) {
+      if (prog >= 100) {
+        return routeCoords[routeCoords.length - 1];
+      }
+      if (prog < 20) {
+        const approachRoute = generatePickupApproachRoute(
+          activeOrder.jemputLat ?? -6.8362,
+          activeOrder.jemputLng ?? 108.2281,
+          routeCoords[1] || routeCoords[0]
+        );
+        const subProg = Math.min(100, Math.max(0, (prog / 20) * 100));
+        return interpolateRoutePosition(approachRoute, subProg).position;
+      }
+      const tripProg = Math.min(100, Math.max(0, ((prog - 20) / 80) * 100));
+      return interpolateRoutePosition(routeCoords, tripProg).position;
+    }
+
+    if (activeOrder.driver?.currentLat && activeOrder.driver?.currentLng) {
+      return [activeOrder.driver.currentLat, activeOrder.driver.currentLng];
+    }
+    return [activeOrder.jemputLat, activeOrder.jemputLng];
+  }, [
+    activeOrder?.simulationProgress,
+    activeOrder?.status,
+    routeCoords,
+    activeOrder?.jemputLat,
+    activeOrder?.jemputLng,
+    activeOrder?.driver?.currentLat,
+    activeOrder?.driver?.currentLng,
+  ]);
+
+  const driverHeading: number = useMemo(() => {
+    if (!activeOrder) return 0;
+    const prog = activeOrder.simulationProgress || 0;
+    if (routeCoords && routeCoords.length > 0) {
+      if (prog < 20) {
+        const approachRoute = generatePickupApproachRoute(
+          activeOrder.jemputLat ?? -6.8362,
+          activeOrder.jemputLng ?? 108.2281,
+          routeCoords[1] || routeCoords[0]
+        );
+        const subProg = Math.min(100, Math.max(0, (prog / 20) * 100));
+        return interpolateRoutePosition(approachRoute, subProg).heading;
+      }
+      const tripProg = Math.min(100, Math.max(0, ((prog - 20) / 80) * 100));
+      return interpolateRoutePosition(routeCoords, tripProg).heading;
+    }
+    return activeOrder.driver?.heading ?? 0;
+  }, [
+    activeOrder?.simulationProgress,
+    routeCoords,
+    activeOrder?.jemputLat,
+    activeOrder?.jemputLng,
+    activeOrder?.driver?.heading,
+  ]);
 
   return (
     <main className="app-page">
@@ -4814,7 +4919,7 @@ function PelangganContent() {
                   destinationLabel={activeOrder.tujuanAlamat || destCustom}
                   routeCoordinates={routeCoords}
                   driverLocation={driverPos}
-                  driverHeading={activeOrder?.driver?.heading ?? 0}
+                  driverHeading={driverHeading}
                   driverName={activeOrder?.driver?.user.nama || "Budi Santoso"}
                   driverUnit={
                     activeOrder?.driver?.vehicle?.kodeUnit ||

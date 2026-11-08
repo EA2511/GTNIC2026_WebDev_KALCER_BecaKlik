@@ -18,9 +18,19 @@ export async function POST(request: Request) {
 
     const oId = Number(orderId);
     const stepDelta = deltaPercent != null ? Number(deltaPercent) : 6;
+    const clientProgress = body.currentProgress != null ? Number(body.currentProgress) : null;
+
+    let targetOrder = sharedStore.getOrder(oId);
+    if (!targetOrder) {
+      targetOrder = sharedStore.getActiveOrder();
+    }
+
+    if (targetOrder && clientProgress != null && clientProgress > (targetOrder.simulationProgress || 0)) {
+      targetOrder.simulationProgress = clientProgress;
+    }
 
     // 1. Majukan simulasi di sharedStore (Single Source of Truth untuk Pelanggan & Driver)
-    const updatedOrder = sharedStore.stepOrder(oId, stepDelta, Boolean(forceAdvance));
+    const updatedOrder = sharedStore.stepOrder(targetOrder ? targetOrder.id : oId, stepDelta, Boolean(forceAdvance));
 
     if (updatedOrder) {
       const currentLoc: [number, number] = updatedOrder.driver

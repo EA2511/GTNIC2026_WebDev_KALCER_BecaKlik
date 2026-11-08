@@ -700,11 +700,15 @@ interface StoreData {
   nextChatId: number;
 }
 
-const CACHE_FILE_PATH = path.join(process.cwd(), '.becak-store-cache.json');
+const CACHE_FILE_PATH =
+  process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.TMPDIR
+    ? path.join('/tmp', '.becak-store-cache.json')
+    : path.join(process.cwd(), '.becak-store-cache.json');
 
 function loadPersistedCache(): Partial<{
   version: number;
   orders: [number, SharedOrder][];
+  chatMessages: [number, SharedChatMessage[]][];
   ratings: SharedRating[];
   registeredUsers: [string, SharedRegisteredUser][];
   fleetDrivers: SharedFleetDriver[];
@@ -730,8 +734,9 @@ function loadPersistedCache(): Partial<{
 function savePersistedCache(s: StoreData): void {
   try {
     const payload = {
-      version: 4,
+      version: 5,
       orders: Array.from(s.orders.entries()),
+      chatMessages: Array.from(s.chatMessages.entries()),
       ratings: sortRatingsNewestFirst(s.ratings),
       registeredUsers: Array.from(s.registeredUsers.entries()),
       fleetDrivers: s.fleetDrivers,
@@ -792,7 +797,7 @@ if (!globalForStore.__shared_store__) {
 
   globalForStore.__shared_store__ = {
     orders: new Map<number, SharedOrder>(cached?.orders || []),
-    chatMessages: new Map<number, SharedChatMessage[]>(),
+    chatMessages: new Map<number, SharedChatMessage[]>(cached?.chatMessages || []),
     registeredUsers: initialRegUsersMap,
     ratings: mergedRatings,
     fleetDrivers:
@@ -1489,6 +1494,7 @@ export const sharedStore = {
     if (targetId !== numId) {
       store.chatMessages.set(numId, list);
     }
+    savePersistedCache(store);
 
     return newMsg;
   },

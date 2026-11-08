@@ -30,6 +30,7 @@ import MapWrapper from "@/components/map/MapWrapper";
 import TripChat from "@/components/chat/TripChat";
 import {
   generateRoadCorridorFallback,
+  generatePickupApproachRoute,
   interpolateRoutePosition,
 } from "@/lib/geo";
 
@@ -715,6 +716,7 @@ export default function DriverPage() {
           body: JSON.stringify({
             orderId: activeOrdId,
             deltaPercent: 6,
+            currentProgress: activeOrder?.simulationProgress || 0,
           }),
         });
         const data = await res.json().catch(() => null);
@@ -722,8 +724,28 @@ export default function DriverPage() {
           setActiveOrder((prev) => {
             if (!prev || prev.id !== data.order.id) return prev;
             if (prev.status === "SELESAI") return prev;
-            return data.order;
+            const safeProg = Math.max(
+              prev.simulationProgress || 0,
+              data.order.simulationProgress || 0,
+            );
+            return {
+              ...prev,
+              ...data.order,
+              simulationProgress: safeProg,
+            };
           });
+
+          // Broadcast realtime ke tab Pelanggan
+          try {
+            const bc = new BroadcastChannel("becaklik_simulation_sync");
+            bc.postMessage({
+              type: "SIM_PROGRESS",
+              orderId: activeOrdId,
+              progress: data.order.simulationProgress,
+              status: data.order.status,
+            });
+            bc.close();
+          } catch {}
         }
       } catch {
         // background step
@@ -731,7 +753,36 @@ export default function DriverPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeOrdId, activeOrdStatus, autoSimDriver]);
+  }, [activeOrdId, activeOrdStatus, autoSimDriver, activeOrder?.simulationProgress]);
+
+  // Sinkronisasi Lintas-Tab Driver <-> Penumpang (Zero Latency Lockstep)
+  useEffect(() => {
+    if (typeof window === "undefined" || !activeOrdId) return;
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("becaklik_simulation_sync");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "SIM_PROGRESS" && event.data.orderId === activeOrdId) {
+          const incomingProg = Number(event.data.progress || 0);
+          setActiveOrder((prev) => {
+            if (!prev || prev.id !== activeOrdId) return prev;
+            if (prev.status === "SELESAI") return prev;
+            const safeProg = Math.max(prev.simulationProgress || 0, incomingProg);
+            const newStatus = event.data.status || (safeProg >= 100 ? "SELESAI" : prev.status);
+            return {
+              ...prev,
+              simulationProgress: safeProg,
+              status: newStatus,
+            };
+          });
+        }
+      };
+    } catch {}
+
+    return () => {
+      if (bc) bc.close();
+    };
+  }, [activeOrdId]);
 
   // Dismiss Completed Trip and Return to Standby Queue (Instant & Race-Condition Safe)
   async function handleDismissOrder() {
@@ -791,18 +842,33 @@ export default function DriverPage() {
   let driverMapPos: [number, number] = [-6.8362, 108.2281];
   let driverMapHeading = 45;
 
-  if (activeOrder?.driver?.currentLat && activeOrder?.driver?.currentLng) {
+  if (routeCoords.length > 0 && activeOrder) {
+    const prog = activeOrder.simulationProgress || 0;
+    if (prog >= 100) {
+      driverMapPos = routeCoords[routeCoords.length - 1];
+      driverMapHeading = 0;
+    } else if (prog < 20) {
+      const approachRoute = generatePickupApproachRoute(
+        activeOrder.jemputLat ?? -6.8362,
+        activeOrder.jemputLng ?? 108.2281,
+        routeCoords[1] || routeCoords[0]
+      );
+      const subProg = Math.min(100, Math.max(0, (prog / 20) * 100));
+      const interp = interpolateRoutePosition(approachRoute, subProg);
+      driverMapPos = interp.position;
+      driverMapHeading = interp.heading;
+    } else {
+      const tripProg = Math.min(100, Math.max(0, ((prog - 20) / 80) * 100));
+      const interp = interpolateRoutePosition(routeCoords, tripProg);
+      driverMapPos = interp.position;
+      driverMapHeading = interp.heading;
+    }
+  } else if (activeOrder?.driver?.currentLat && activeOrder?.driver?.currentLng) {
     driverMapPos = [
       activeOrder.driver.currentLat,
       activeOrder.driver.currentLng,
     ];
     driverMapHeading = activeOrder.driver.heading ?? 45;
-  } else if (routeCoords.length > 0) {
-    const prog = activeOrder?.simulationProgress || 0;
-    const ratio = prog < 20 ? 0 : Math.min(100, ((prog - 20) / 80) * 100);
-    const interp = interpolateRoutePosition(routeCoords, ratio);
-    driverMapPos = interp.position;
-    driverMapHeading = interp.heading;
   } else if (activeOrder?.jemputLat && activeOrder?.jemputLng) {
     driverMapPos = [activeOrder.jemputLat, activeOrder.jemputLng];
   }

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquare, User, Bike } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, MessageSquare, User, Bike, CheckCheck } from 'lucide-react';
 
 interface ChatMessage {
   id: number;
@@ -20,17 +20,17 @@ interface TripChatProps {
 }
 
 const quickMessagesPassenger = [
-  'Saya sudah menunggu di titik jemput.',
-  'Saya berada di dekat pintu lobi utama.',
-  'Mohon tunggu sebentar ya Pak.',
-  'Terima kasih banyak!',
+  '📍 Sudah di titik jemput',
+  '⏳ Mohon tunggu sebentar ya',
+  '👋 Di dekat lobi / gerbang',
+  '✅ Terima kasih banyak!',
 ];
 
 const quickMessagesDriver = [
-  'Saya sedang meluncur ke titik penjemputan di Majalengka.',
-  'Saya sudah tiba di depan lokasi jemput.',
-  'Becak listrik warna biru langit BL-001 ya Kak.',
-  'Siap, saya tunggu di dekat gerbang.',
+  '🚀 Sedang meluncur ke titik jemput',
+  '📍 Sudah tiba di depan lokasi',
+  '🚙 Becak biru langit BL-001',
+  '👍 Siap, saya tunggu di sini',
 ];
 
 export default function TripChat({
@@ -39,12 +39,100 @@ export default function TripChat({
   currentUserName,
   currentUserId,
 }: TripChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const storageKey = `becaklik_chat_${orderId}`;
+
+  // Initial messages from localStorage (prevents flashing & guarantees persistence)
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return [];
+  });
+
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
-  // Poll messages every 800ms for real-time responsiveness between Pelanggan & Driver
+  // Helper to deduplicate and sort messages
+  const mergeMessages = useCallback((prevList: ChatMessage[], incomingList: ChatMessage[]): ChatMessage[] => {
+    const map = new Map<string, ChatMessage>();
+
+    // Masukkan pesan yang sudah ada
+    for (const m of prevList) {
+      if (!m || !m.pesan) continue;
+      const key = `${m.id || ''}_${m.pesan}_${m.senderRole}`;
+      map.set(key, m);
+    }
+
+    // Gabungkan pesan dari server / broadcast tanpa menghapus pesan lokal
+    for (const m of incomingList) {
+      if (!m || !m.pesan) continue;
+      const key = `${m.id || ''}_${m.pesan}_${m.senderRole}`;
+      if (!map.has(key)) {
+        map.set(key, m);
+      }
+    }
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    // Simpan salinan terbaru ke localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(merged));
+      } catch {}
+    }
+
+    return merged;
+  }, [storageKey]);
+
+  // 1. Sinkronisasi Antar Tab (Driver <-> Penumpang) via BroadcastChannel
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(`becaklik_chat_${orderId}`);
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'NEW_CHAT' && event.data.message) {
+          const incoming: ChatMessage = event.data.message;
+          setMessages((prev) => mergeMessages(prev, [incoming]));
+        }
+      };
+    } catch {
+      // BroadcastChannel tidak didukung di beberapa webview lama
+    }
+
+    // Storage Event fallback untuk sinkronisasi antar-tab
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === storageKey && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setMessages((prev) => mergeMessages(prev, parsed));
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [orderId, storageKey, mergeMessages]);
+
+  // 2. Polling pesan dari server (Serverless-Safe: tidak pernah menghapus pesan lokal jika server return kosong)
   useEffect(() => {
     let isMounted = true;
 
@@ -54,45 +142,62 @@ export default function TripChat({
           cache: 'no-store',
         });
         const data = await res.json();
-        if (isMounted && Array.isArray(data.messages)) {
-          setMessages((prev) => {
-            if (
-              prev.length === data.messages.length &&
-              prev.every((m, idx) => m.id === data.messages[idx]?.id)
-            ) {
-              return prev;
-            }
-            return data.messages;
-          });
+        if (isMounted && Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages((prev) => mergeMessages(prev, data.messages));
         }
-      } catch (err) {
-        console.error('Error fetching chat messages:', err);
+      } catch {
+        // Abaikan offline / error sementara
       }
     }
 
     void fetchMessages();
-    const interval = setInterval(fetchMessages, 800);
+    const interval = setInterval(fetchMessages, 1000);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [orderId]);
+  }, [orderId, mergeMessages]);
 
-  // Scroll only the inner chat container on new message (never scroll the main window!)
+  // 3. Scroll halus ke pesan terbawah setiap ada pesan baru
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (container) {
-      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      if (isInitialMount.current) {
+        container.scrollTop = container.scrollHeight;
+        isInitialMount.current = false;
+      } else {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      }
     }
   }, [messages.length]);
 
-  // Send message (Instant Optimistic Update + Server Sync)
+  // 4. Kirim Pesan (Optimistic 0ms + LocalStorage + Broadcast + Server Sync)
   async function handleSendMessage(textToSend?: string) {
     const text = (textToSend || inputText).trim();
     if (!text || loading) return;
 
     if (!textToSend) setInputText('');
+
+    const optimisticMessage: ChatMessage = {
+      id: Date.now(),
+      orderId,
+      senderRole: currentUserRole,
+      senderNama: currentUserName,
+      pesan: text,
+      createdAt: new Date().toISOString(),
+    };
+
+    // a. Langsung tampil di layar (0ms latency)
+    setMessages((prev) => mergeMessages(prev, [optimisticMessage]));
+
+    // b. Broadcast ke tab lain (Pelanggan <-> Driver)
+    try {
+      const bc = new BroadcastChannel(`becaklik_chat_${orderId}`);
+      bc.postMessage({ type: 'NEW_CHAT', message: optimisticMessage });
+      bc.close();
+    } catch {}
+
     setLoading(true);
     try {
       const res = await fetch(`/api/orders/${orderId}/chat`, {
@@ -107,13 +212,10 @@ export default function TripChat({
       });
       const data = await res.json();
       if (data.success && data.message) {
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === data.message.id)) return prev;
-          return [...prev, data.message];
-        });
+        setMessages((prev) => mergeMessages(prev, [data.message]));
       }
     } catch (err) {
-      console.error('Error sending message:', err);
+      console.warn('Chat server sync notice:', err);
     } finally {
       setLoading(false);
     }
@@ -132,51 +234,113 @@ export default function TripChat({
         display: 'flex',
         flexDirection: 'column',
         height: '380px',
+        maxHeight: '65vh',
         overflow: 'hidden',
+        width: '100%',
       }}
     >
-      {/* Chat Header */}
+      {/* Header Percakapan */}
       <div
         style={{
           background: 'linear-gradient(90deg, #075985 0%, #0284c7 100%)',
-          color: 'white',
-          padding: '12px 16px',
+          color: '#ffffff',
+          padding: '10px 14px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <MessageSquare size={17} color="#38bdf8" />
-          <strong style={{ fontSize: '13px' }}>
-            Percakapan Perjalanan · Pesanan #{orderId}
-          </strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              border: '1.5px solid rgba(255, 255, 255, 0.35)',
+            }}
+          >
+            {currentUserRole === 'PENUMPANG' ? (
+              <Bike size={16} color="#ffffff" />
+            ) : (
+              <User size={16} color="#ffffff" />
+            )}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <strong
+                style={{
+                  fontSize: '12.5px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '160px',
+                }}
+              >
+                {currentUserRole === 'PENUMPANG'
+                  ? 'Mitra Driver BL-001'
+                  : 'Pelanggan'}
+              </strong>
+              <span
+                style={{
+                  fontSize: '9px',
+                  background: '#10b981',
+                  color: '#ffffff',
+                  padding: '1px 6px',
+                  borderRadius: '999px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                }}
+              >
+                ● Online
+              </span>
+            </div>
+            <span
+              style={{
+                fontSize: '10px',
+                color: '#e0f2fe',
+                display: 'block',
+              }}
+            >
+              Pesanan #{orderId} · Terenkripsi In-App
+            </span>
+          </div>
         </div>
+
         <span
           style={{
-            fontSize: '11px',
+            fontSize: '10px',
             color: '#38bdf8',
-            background: 'rgba(56, 189, 248, 0.2)',
-            padding: '2px 8px',
+            background: 'rgba(56, 189, 248, 0.18)',
+            padding: '3px 8px',
             borderRadius: '999px',
             fontWeight: 700,
+            whiteSpace: 'nowrap',
           }}
         >
-          ● Terenkripsi In-App
+          ⚡ Live Sync
         </span>
       </div>
 
-      {/* Messages List Area */}
+      {/* Area Daftar Pesan */}
       <div
         ref={messagesContainerRef}
         style={{
           flex: 1,
-          padding: '14px',
+          padding: '12px 14px',
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
+          gap: '9px',
           background: '#f8fafc',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         {messages.length === 0 ? (
@@ -185,15 +349,20 @@ export default function TripChat({
               margin: 'auto',
               textAlign: 'center',
               color: '#94a3b8',
-              fontSize: '13px',
+              fontSize: '12px',
+              padding: '10px',
             }}
           >
-            <MessageSquare size={28} color="#cbd5e1" style={{ margin: '0 auto 6px auto' }} />
-            <p style={{ margin: 0 }}>Belum ada pesan.</p>
-            <small>Gunakan pesan cepat di bawah untuk koordinasi titik jemput.</small>
+            <MessageSquare size={26} color="#cbd5e1" style={{ margin: '0 auto 6px auto' }} />
+            <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#64748b' }}>
+              Belum ada percakapan.
+            </p>
+            <small style={{ fontSize: '11px' }}>
+              Gunakan pesan cepat di bawah untuk koordinasi titik jemput.
+            </small>
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, index) => {
             const isMe = msg.senderRole === currentUserRole;
             const timeStr = new Date(msg.createdAt).toLocaleTimeString('id-ID', {
               hour: '2-digit',
@@ -202,10 +371,10 @@ export default function TripChat({
 
             return (
               <div
-                key={msg.id}
+                key={msg.id ? `msg-${msg.id}` : `idx-${index}`}
                 style={{
                   alignSelf: isMe ? 'flex-end' : 'flex-start',
-                  maxWidth: '82%',
+                  maxWidth: '84%',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: isMe ? 'flex-end' : 'flex-start',
@@ -215,7 +384,7 @@ export default function TripChat({
                   style={{
                     fontSize: '10px',
                     color: '#64748b',
-                    marginBottom: '3px',
+                    marginBottom: '2px',
                     fontWeight: 600,
                     display: 'flex',
                     alignItems: 'center',
@@ -227,7 +396,7 @@ export default function TripChat({
                   ) : (
                     <User size={11} color="#0369a1" />
                   )}
-                  <span>{msg.senderNama}</span>
+                  <span>{isMe ? 'Anda' : msg.senderNama}</span>
                 </div>
 
                 <div
@@ -236,38 +405,51 @@ export default function TripChat({
                       ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
                       : '#ffffff',
                     color: isMe ? '#ffffff' : '#0f172a',
-                    padding: '9px 13px',
+                    padding: '8px 12px',
                     borderRadius: isMe ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     lineHeight: '1.45',
                     boxShadow: isMe
-                      ? '0 4px 12px rgba(2, 132, 199, 0.22)'
-                      : '0 2px 6px rgba(0,0,0,0.05)',
-                    border: isMe ? 'none' : '1px solid #cbd5e1',
+                      ? '0 3px 10px rgba(2, 132, 199, 0.22)'
+                      : '0 1px 4px rgba(0,0,0,0.06)',
+                    border: isMe ? 'none' : '1px solid #e2e8f0',
+                    wordBreak: 'break-word',
                   }}
                 >
                   {msg.pesan}
                 </div>
 
-                <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
-                  {timeStr}
-                </span>
+                <div
+                  style={{
+                    fontSize: '9.5px',
+                    color: '#94a3b8',
+                    marginTop: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                  }}
+                >
+                  <span>{timeStr}</span>
+                  {isMe && <CheckCheck size={11} color="#0284c7" />}
+                </div>
               </div>
             );
           })
         )}
       </div>
 
-      {/* Quick Preset Chips */}
+      {/* Preset Pesan Cepat (Mobile Touch-Optimized) */}
       <div
         style={{
           background: '#ffffff',
           borderTop: '1px solid #e2e8f0',
-          padding: '8px 12px',
+          padding: '6px 10px',
           display: 'flex',
           gap: '6px',
           overflowX: 'auto',
           whiteSpace: 'nowrap',
+          flexShrink: 0,
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         {quickTemplates.map((template, idx) => (
@@ -279,20 +461,23 @@ export default function TripChat({
               background: '#f1f5f9',
               border: '1px solid #cbd5e1',
               borderRadius: '999px',
-              padding: '4px 10px',
+              padding: '5px 10px',
               fontSize: '11px',
               fontWeight: 600,
               color: '#334155',
               cursor: 'pointer',
               flexShrink: 0,
+              transition: 'background 0.15s ease',
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#e0f2fe')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#f1f5f9')}
           >
             {template}
           </button>
         ))}
       </div>
 
-      {/* Chat Input Bar */}
+      {/* Form Input Bar (Responsif di HP) */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -301,41 +486,68 @@ export default function TripChat({
         style={{
           background: '#ffffff',
           borderTop: '1px solid #e2e8f0',
-          padding: '8px 12px',
+          padding: '8px 10px',
           display: 'flex',
           gap: '8px',
           alignItems: 'center',
+          flexShrink: 0,
         }}
       >
         <input
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Ketik pesan untuk driver / penumpang..."
+          placeholder={
+            currentUserRole === 'PENUMPANG'
+              ? 'Ketik pesan untuk driver...'
+              : 'Ketik pesan untuk penumpang...'
+          }
           maxLength={500}
           style={{
             flex: 1,
-            padding: '8px 12px',
+            height: '38px',
+            padding: '0 14px',
             borderRadius: '999px',
             border: '1px solid #cbd5e1',
-            fontSize: '13px',
+            fontSize: '12.5px',
             outline: 'none',
+            background: '#f8fafc',
+            color: '#0f172a',
+            boxSizing: 'border-box',
           }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = '#0284c7')}
+          onBlur={(e) => (e.currentTarget.style.borderColor = '#cbd5e1')}
         />
 
         <button
           type="submit"
-          className="button button-primary"
           disabled={loading || !inputText.trim()}
+          aria-label="Kirim Pesan"
           style={{
-            borderRadius: '999px',
-            padding: '8px 14px',
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            background: !inputText.trim() || loading ? '#cbd5e1' : '#0284c7',
+            color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px',
+            justifyContent: 'center',
+            flexShrink: 0,
+            border: 'none',
+            cursor: !inputText.trim() || loading ? 'not-allowed' : 'pointer',
+            transition: 'background 0.2s ease, transform 0.1s ease',
+            boxShadow:
+              !inputText.trim() || loading
+                ? 'none'
+                : '0 3px 8px rgba(2, 132, 199, 0.35)',
+          }}
+          onMouseDown={(e) => {
+            if (inputText.trim() && !loading) e.currentTarget.style.transform = 'scale(0.92)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          <Send size={14} />
+          <Send size={15} style={{ marginLeft: '1px' }} />
         </button>
       </form>
     </div>

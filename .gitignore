@@ -34,6 +34,7 @@ yarn-error.log*
 
 # Local Store Cache
 .becak-store-cache.json
+cpanel-deploy.zip
 
 # Vercel
 .vercel
