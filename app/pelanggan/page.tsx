@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
   ArrowRight,
+  Route,
   Bike,
   Clock3,
   MapPin,
@@ -745,6 +746,13 @@ function PelangganContent() {
 
   // Active View Tab when on trip (Tracking vs Chat)
   const [activeTab, setActiveTab] = useState<"tracking" | "chat">("tracking");
+
+  const switchToPassengerChat = () => {
+    setActiveTab("chat");
+    setTimeout(() => {
+      document.getElementById("passenger-chat-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  };
 
   // Simulation playback for demonstration
   const [isSimulating, setIsSimulating] = useState(true);
@@ -5000,7 +5008,8 @@ function PelangganContent() {
                 }}
               >
                 <section
-                  className="panel"
+                  id="passenger-chat-section"
+                  className="panel passenger-cockpit-panel"
                   style={{
                     background: "#ffffff",
                     border: "1px solid #e2e8f0",
@@ -5027,11 +5036,11 @@ function PelangganContent() {
                         background:
                           activeTab === "tracking" ? "#0284c7" : "#f1f5f9",
                         color: activeTab === "tracking" ? "white" : "#475569",
-                        padding: "8px",
-                        borderRadius: "8px",
+                        padding: "9px 12px",
+                        borderRadius: "10px",
                         border: "none",
                         fontSize: "12px",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         cursor: "pointer",
                       }}
                     >
@@ -5039,17 +5048,18 @@ function PelangganContent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveTab("chat")}
+                      onClick={switchToPassengerChat}
                       style={{
                         flex: 1,
                         background:
-                          activeTab === "chat" ? "#0284c7" : "#f1f5f9",
-                        color: activeTab === "chat" ? "white" : "#475569",
-                        padding: "8px",
-                        borderRadius: "8px",
-                        border: "none",
+                          activeTab === "chat" ? "#0284c7" : "#f0f9ff",
+                        color: activeTab === "chat" ? "white" : "#0284c7",
+                        padding: "9px 12px",
+                        borderRadius: "10px",
+                        border:
+                          activeTab === "chat" ? "none" : "1px solid #bae6fd",
                         fontSize: "12px",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         cursor: "pointer",
                       }}
                     >
@@ -5190,7 +5200,7 @@ function PelangganContent() {
                         <div style={{ marginTop: "12px" }}>
                           <button
                             type="button"
-                            onClick={() => setActiveTab("chat")}
+                            onClick={switchToPassengerChat}
                             className="button button-outline button-full"
                             style={{
                               fontSize: "13px",
@@ -5896,11 +5906,60 @@ function PelangganContent() {
                         currentUserName={activeOrder.penumpangNama || guestName}
                         currentUserId={1}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("tracking")}
+                        className="button button-outline button-full"
+                        style={{
+                          marginTop: "12px",
+                          fontSize: "12px",
+                          padding: "10px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px",
+                          background: "#ffffff",
+                          borderColor: "#cbd5e1",
+                          color: "#334155",
+                          fontWeight: 700,
+                        }}
+                      >
+                        <Route size={14} /> Kembali ke Peta & Detail Driver
+                      </button>
                     </div>
                   )}
                 </section>
               </div>
             </div>
+
+            {/* Floating Quick-Chat Action Button on Mobile (Only during active trip and not on chat tab) */}
+            {activeTab !== "chat" && (
+              <button
+                type="button"
+                onClick={switchToPassengerChat}
+                className="floating-chat-pill"
+                style={{
+                  position: "fixed",
+                  bottom: "24px",
+                  right: "18px",
+                  zIndex: 9999,
+                  background: "#0284c7",
+                  color: "#ffffff",
+                  border: "2px solid #ffffff",
+                  borderRadius: "999px",
+                  padding: "10px 18px",
+                  fontSize: "13px",
+                  fontWeight: 800,
+                  display: "none",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 10px 25px rgba(2, 132, 199, 0.45)",
+                  cursor: "pointer",
+                }}
+              >
+                <MessageSquare size={16} /> Chat Mitra Driver
+              </button>
+            )}
           </div>
         )}
 

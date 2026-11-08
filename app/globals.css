@@ -5174,15 +5174,131 @@ td:first-child {
   transition: transform 0.85s linear;
 }
 
-/* Mobile Optimization for Live Trip Chat */
+/* ============================================================== */
+/* UNIVERSAL RESPONSIVE LIVE TRIP CHAT (MOBILE & DESKTOP)          */
+/* ============================================================== */
+
+.trip-chat-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  height: 480px;
+  max-height: min(580px, 75vh);
+  min-height: 380px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px -2px rgba(2, 132, 199, 0.08);
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+}
+
+.trip-chat-header {
+  background: linear-gradient(90deg, #075985 0%, #0284c7 100%);
+  color: #ffffff;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.trip-chat-messages {
+  flex: 1;
+  padding: 12px 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f8fafc;
+  -webkit-overflow-scrolling: touch;
+}
+
+.trip-chat-presets {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.trip-chat-presets::-webkit-scrollbar {
+  display: none;
+}
+
+.trip-chat-form {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.trip-chat-form input {
+  font-size: 16px !important; /* Critical: Stops iOS Safari viewport auto-zoom */
+}
+
 @media (max-width: 640px) {
-  .trip-chat-container {
-    height: 380px !important;
-    max-height: calc(100dvh - 180px) !important;
-    border-radius: 14px !important;
+  .driver-action-panel,
+  .passenger-cockpit-panel {
+    padding: 12px 10px !important;
+    border-radius: 16px !important;
   }
-  .trip-chat-container input {
-    font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+
+  .trip-chat-container {
+    height: 440px !important;
+    max-height: calc(100dvh - 120px) !important;
+    min-height: 350px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 12px rgba(2, 132, 199, 0.08) !important;
+  }
+
+  .trip-chat-header {
+    padding: 8px 10px !important;
+  }
+
+  .trip-chat-messages {
+    padding: 10px 8px !important;
+    gap: 8px !important;
+  }
+
+  .trip-chat-presets {
+    padding: 6px 8px !important;
+    gap: 5px !important;
+  }
+
+  .trip-chat-presets button {
+    padding: 5px 9px !important;
+    font-size: 10.5px !important;
+  }
+
+  .trip-chat-form {
+    padding: 8px 8px !important;
+    gap: 6px !important;
+  }
+
+  .floating-chat-pill {
+    display: inline-flex !important;
+  }
+}
+
+@media (max-height: 620px) and (max-width: 640px) {
+  .trip-chat-container {
+    height: 340px !important;
+    min-height: 280px !important;
   }
 }
 

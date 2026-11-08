@@ -1004,6 +1004,13 @@ export default function DriverPage() {
     }
   }
 
+  const switchToDriverChat = () => {
+    setDriverTab("chat");
+    setTimeout(() => {
+      document.getElementById("driver-chat-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  };
+
   // Parse Route coordinates for driver's map
   let routeCoords: [number, number][] = [];
   if (activeOrder?.routeGeometry) {
@@ -1856,11 +1863,13 @@ export default function DriverPage() {
             <>
               {/* Right: Driver Action & Chat Panel */}
               <section
+                id="driver-chat-section"
+                className="driver-action-panel"
                 style={{
                   background: "#ffffff",
                   borderRadius: "18px",
                   border: "1px solid #e2e8f0",
-                  padding: "22px",
+                  padding: "20px",
                   boxShadow: "var(--shadow)",
                   alignSelf: "start",
                 }}
@@ -1898,7 +1907,7 @@ export default function DriverPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setDriverTab("chat")}
+                    onClick={switchToDriverChat}
                     style={{
                       flex: 1,
                       background: driverTab === "chat" ? "#0284c7" : "#f0f9ff",
@@ -2081,7 +2090,7 @@ export default function DriverPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setDriverTab("chat")}
+                        onClick={switchToDriverChat}
                         className="button button-outline"
                         style={{
                           fontSize: "12px",
@@ -3168,6 +3177,35 @@ export default function DriverPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Floating Quick-Chat Action Button on Mobile (Only during active trip and not on chat tab) */}
+        {activeOrder && driverTab !== "chat" && (
+          <button
+            type="button"
+            onClick={switchToDriverChat}
+            className="floating-chat-pill"
+            style={{
+              position: "fixed",
+              bottom: "24px",
+              right: "18px",
+              zIndex: 9999,
+              background: "#0284c7",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "999px",
+              padding: "10px 18px",
+              fontSize: "13px",
+              fontWeight: 800,
+              display: "none",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "0 10px 25px rgba(2, 132, 199, 0.45)",
+              cursor: "pointer",
+            }}
+          >
+            <MessageSquare size={16} /> Chat Penumpang
+          </button>
         )}
       </div>
     </main>

@@ -231,24 +231,23 @@ export default function TripChat({
         background: '#ffffff',
         borderRadius: '16px',
         border: '1px solid #e2e8f0',
-        boxShadow: '0 4px 15px -3px rgba(0,0,0,0.07)',
+        boxShadow: '0 4px 18px -2px rgba(2, 132, 199, 0.08)',
         display: 'flex',
         flexDirection: 'column',
-        height: '420px',
-        maxHeight: 'min(500px, 70vh)',
-        minHeight: '340px',
-        overflow: 'hidden',
         width: '100%',
         maxWidth: '100%',
         boxSizing: 'border-box',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
       {/* Header Percakapan */}
       <div
+        className="trip-chat-header"
         style={{
           background: 'linear-gradient(90deg, #075985 0%, #0284c7 100%)',
           color: '#ffffff',
-          padding: '10px 12px',
+          padding: '10px 14px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -277,14 +276,15 @@ export default function TripChat({
             )}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
               <strong
                 style={{
-                  fontSize: '12.5px',
+                  fontSize: '13px',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  maxWidth: '130px',
+                  display: 'block',
+                  minWidth: 0,
                 }}
               >
                 {currentUserRole === 'PENUMPANG'
@@ -342,6 +342,7 @@ export default function TripChat({
       {/* Area Daftar Pesan */}
       <div
         ref={messagesContainerRef}
+        className="trip-chat-messages"
         style={{
           flex: 1,
           padding: '12px 14px',
@@ -455,10 +456,11 @@ export default function TripChat({
 
       {/* Preset Pesan Cepat (Mobile Touch-Optimized) */}
       <div
+        className="trip-chat-presets"
         style={{
           background: '#ffffff',
           borderTop: '1px solid #e2e8f0',
-          padding: '6px 8px',
+          padding: '8px 10px',
           display: 'flex',
           gap: '6px',
           overflowX: 'auto',
@@ -477,7 +479,7 @@ export default function TripChat({
               background: '#f1f5f9',
               border: '1px solid #cbd5e1',
               borderRadius: '999px',
-              padding: '5px 9px',
+              padding: '6px 11px',
               fontSize: '11px',
               fontWeight: 600,
               color: '#334155',
@@ -493,16 +495,17 @@ export default function TripChat({
         ))}
       </div>
 
-      {/* Form Input Bar (Responsif di HP) */}
+      {/* Form Input Bar (Responsif di HP & Bebas Auto-Zoom iOS) */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSendMessage();
         }}
+        className="trip-chat-form"
         style={{
           background: '#ffffff',
           borderTop: '1px solid #e2e8f0',
-          padding: '8px 10px',
+          padding: '10px 12px',
           display: 'flex',
           gap: '8px',
           alignItems: 'center',
@@ -524,11 +527,11 @@ export default function TripChat({
             flex: 1,
             minWidth: 0,
             width: '100%',
-            height: '40px',
-            padding: '0 14px',
+            height: '42px',
+            padding: '0 16px',
             borderRadius: '999px',
             border: '1.5px solid #cbd5e1',
-            fontSize: '15px',
+            fontSize: '16px', // Kritis: minimal 16px agar Safari iOS tidak auto-zoom halaman
             outline: 'none',
             background: '#f8fafc',
             color: '#0f172a',
@@ -543,8 +546,8 @@ export default function TripChat({
           disabled={loading || !inputText.trim()}
           aria-label="Kirim Pesan"
           style={{
-            width: '40px',
-            height: '40px',
+            width: '42px',
+            height: '42px',
             borderRadius: '50%',
             background: !inputText.trim() || loading ? '#cbd5e1' : '#0284c7',
             color: '#ffffff',
