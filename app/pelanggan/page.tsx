@@ -841,11 +841,11 @@ function PelangganContent() {
           if (!active) return;
           if (
             data?.order &&
-            (ONGOING.includes(data.order.status) ||
-              (queryOrderId && data.order.status === "SELESAI"))
+            ONGOING.includes(data.order.status) &&
+            data.order.simulationProgress < 100
           ) {
             setActiveOrder(data.order);
-            setIsSimulating(data.order.status !== "SELESAI");
+            setIsSimulating(true);
             return;
           } else {
             localStorage.removeItem("becak_active_order_id");
@@ -859,7 +859,8 @@ function PelangganContent() {
         if (
           drvData?.activeOrder &&
           !drvData.activeOrder.dismissedByPassenger &&
-          ONGOING.includes(drvData.activeOrder.status)
+          ONGOING.includes(drvData.activeOrder.status) &&
+          drvData.activeOrder.simulationProgress < 100
         ) {
           setActiveOrder(drvData.activeOrder);
           setIsSimulating(true);
@@ -1354,7 +1355,13 @@ function PelangganContent() {
               prev.simulationProgress || 0,
               data.order.simulationProgress || 0,
             );
-            const hasStatusChanged = prev.status !== data.order.status;
+
+            const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+            const prevIdx = statusRank.indexOf(prev.status);
+            const incomingIdx = statusRank.indexOf(data.order.status);
+            const safeStatus = (prevIdx > incomingIdx ? prev.status : data.order.status) as OrderData['status'];
+
+            const hasStatusChanged = prev.status !== safeStatus;
             const hasProgChanged =
               (prev.simulationProgress || 0) !== updatedProg;
             const hasTipChanged = prev.tip !== data.order.tip;
@@ -1377,13 +1384,13 @@ function PelangganContent() {
               ...prev,
               ...data.order,
               simulationProgress: updatedProg,
-              status: data.order.status,
+              status: safeStatus,
               driver: data.order.driver
                 ? {
                     ...data.order.driver,
-                    currentLat: prev.driver?.currentLat ?? data.order.driver.currentLat,
-                    currentLng: prev.driver?.currentLng ?? data.order.driver.currentLng,
-                    heading: prev.driver?.heading ?? data.order.driver.heading,
+                    currentLat: prevIdx > incomingIdx && prev.driver ? prev.driver.currentLat : data.order.driver.currentLat,
+                    currentLng: prevIdx > incomingIdx && prev.driver ? prev.driver.currentLng : data.order.driver.currentLng,
+                    heading: prevIdx > incomingIdx && prev.driver ? prev.driver.heading : data.order.driver.heading,
                   }
                 : prev.driver,
             };
@@ -1489,14 +1496,20 @@ function PelangganContent() {
 
         if (stepData?.order) {
           const ord = stepData.order;
+          const safeProg = Math.max(
+            prev.simulationProgress || 0,
+            ord.simulationProgress || 0,
+          );
+          const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+          const prevIdx = statusRank.indexOf(prev.status);
+          const incomingIdx = statusRank.indexOf(ord.status);
+          const safeStatus = (prevIdx > incomingIdx ? prev.status : ord.status) as OrderData['status'];
+
           return {
             ...prev,
             ...ord,
-            status: ord.status,
-            simulationProgress: Math.max(
-              prev.simulationProgress || 0,
-              ord.simulationProgress || 0,
-            ),
+            status: safeStatus,
+            simulationProgress: safeProg,
             driver: ord.driver || prev.driver,
           };
         }
@@ -1636,11 +1649,15 @@ function PelangganContent() {
             if (!prev || prev.id !== activeOrderId) return prev;
             if (prev.status === "SELESAI") return prev;
             const safeProg = Math.max(prev.simulationProgress || 0, incomingProg);
-            const newStatus = event.data.status || (safeProg >= 100 ? "SELESAI" : prev.status);
+            const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+            const prevIdx = statusRank.indexOf(prev.status);
+            const incomingIdx = statusRank.indexOf(event.data.status || prev.status);
+            const safeStatus = (prevIdx > incomingIdx ? prev.status : (event.data.status || prev.status)) as OrderData['status'];
+            const finalStatus = safeProg >= 100 ? "SELESAI" : safeStatus;
             return {
               ...prev,
               simulationProgress: safeProg,
-              status: newStatus,
+              status: finalStatus,
             };
           });
         }

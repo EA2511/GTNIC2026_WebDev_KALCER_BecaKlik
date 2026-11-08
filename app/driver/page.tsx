@@ -473,16 +473,28 @@ export default function DriverPage() {
             return { ...prev, ...d, status: effectiveStatus };
           });
 
-          // Guard activeOrder state
+          // Guard activeOrder state (Never allow progress or status to jump backwards)
           setActiveOrder((prev) => {
             if (!prev && !rawActive) return null;
             if (!prev && rawActive) return rawActive;
             if (prev && !rawActive) return null;
             const o = rawActive;
+            if (prev!.id !== o.id) return o;
+
+            const safeProg = Math.max(
+              prev!.simulationProgress || 0,
+              o.simulationProgress || 0,
+            );
+
+            const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+            const prevIdx = statusRank.indexOf(prev!.status);
+            const incomingIdx = statusRank.indexOf(o.status);
+            const safeStatus = (prevIdx > incomingIdx ? prev!.status : o.status) as OrderInfo['status'];
+
             if (
               prev!.id === o.id &&
-              prev!.status === o.status &&
-              prev!.simulationProgress === o.simulationProgress &&
+              prev!.status === safeStatus &&
+              prev!.simulationProgress === safeProg &&
               prev!.tip === o.tip &&
               prev!.driver?.currentLat === o.driver?.currentLat &&
               prev!.driver?.currentLng === o.driver?.currentLng &&
@@ -490,7 +502,17 @@ export default function DriverPage() {
             ) {
               return prev;
             }
-            return o;
+            return {
+              ...o,
+              status: safeStatus,
+              simulationProgress: safeProg,
+              driver: {
+                ...o.driver,
+                currentLat: prevIdx > incomingIdx && prev!.driver ? prev!.driver.currentLat : o.driver.currentLat,
+                currentLng: prevIdx > incomingIdx && prev!.driver ? prev!.driver.currentLng : o.driver.currentLng,
+                heading: prevIdx > incomingIdx && prev!.driver ? prev!.driver.heading : o.driver.heading,
+              },
+            };
           });
 
           // Guard incomingOrders state
@@ -773,9 +795,15 @@ export default function DriverPage() {
               prev.simulationProgress || 0,
               data.order.simulationProgress || 0,
             );
+            const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+            const prevIdx = statusRank.indexOf(prev.status);
+            const incomingIdx = statusRank.indexOf(data.order.status);
+            const safeStatus = (prevIdx > incomingIdx ? prev.status : data.order.status) as OrderInfo['status'];
+
             return {
               ...prev,
               ...data.order,
+              status: safeStatus,
               simulationProgress: safeProg,
             };
           });

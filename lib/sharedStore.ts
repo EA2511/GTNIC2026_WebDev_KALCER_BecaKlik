@@ -1030,7 +1030,7 @@ export const sharedStore = {
     return incoming.sort((a, b) => b.id - a.id);
   },
 
-  // Mendapatkan order aktif yang sedang dijalankan oleh Driver (DITERIMA / DIJEMPUT / BERJALAN / SELESAI)
+  // Mendapatkan order aktif yang sedang dijalankan oleh Driver (DITERIMA / DIJEMPUT / BERJALAN)
   getActiveOrder(driverId = 1): SharedOrder | null {
     const allOrders = Array.from(store.orders.values()).sort((a, b) => b.id - a.id);
     for (const order of allOrders) {
@@ -1043,19 +1043,6 @@ export const sharedStore = {
       ) {
         ensureRouteCoords(order);
         return order;
-      }
-    }
-    for (const order of allOrders) {
-      if (
-        !order.dismissedByDriver &&
-        (order.driverId === driverId || order.driverId == null) &&
-        order.status === 'SELESAI'
-      ) {
-        // Hanya kembalikan status SELESAI jika baru selesai dalam 45 detik terakhir (agar animasi tiba di tujuan sempat terlihat)
-        if (order.lastStepAt && Date.now() - order.lastStepAt < 45_000) {
-          ensureRouteCoords(order);
-          return order;
-        }
       }
     }
     return null;
@@ -1296,7 +1283,13 @@ export const sharedStore = {
     }
 
     order.simulationProgress = Math.max(order.simulationProgress || 0, progress);
-    order.status = status;
+
+    const statusPriority = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+    const currentIdx = statusPriority.indexOf(order.status);
+    const targetIdx = statusPriority.indexOf(status);
+    if (targetIdx >= currentIdx) {
+      order.status = status;
+    }
     const defaultVehicle = {
       kodeUnit: 'BL-001',
       modelName: 'Becak Listrik Majalengka EV',
