@@ -361,6 +361,7 @@ export default function DriverPage() {
   const prevTipRef = useRef(0);
   const dismissedOrderIdRef = useRef<number | null>(null);
   const rejectedOrderIdsRef = useRef<Set<number>>(new Set());
+  const chimedOrderIdsRef = useRef<Set<number>>(new Set());
 
   // Auto-dismiss accept notification after 7 seconds
   useEffect(() => {
@@ -430,15 +431,18 @@ export default function DriverPage() {
             (o: OrderInfo) => !rejectedOrderIdsRef.current.has(o.id),
           );
 
-          // Play sound if a new order arrives
-          const newCount = filteredInc.length;
-          if (
-            newCount > prevIncomingCountRef.current &&
-            effectiveStatus === "ONLINE"
-          ) {
+          // Play sound strictly once per new order ID to prevent repetitive loops
+          const unnotified = filteredInc.filter(
+            (o) =>
+              !chimedOrderIdsRef.current.has(o.id) &&
+              o.id !== rawActive?.id &&
+              o.status === "MENCARI_DRIVER",
+          );
+          if (unnotified.length > 0 && effectiveStatus === "ONLINE") {
+            unnotified.forEach((o) => chimedOrderIdsRef.current.add(o.id));
             playOrderChime();
           }
-          prevIncomingCountRef.current = newCount;
+          prevIncomingCountRef.current = filteredInc.length;
 
           // Sound and alert when passenger sends tip in real time
           const currentTip = rawActive?.tip || 0;
@@ -524,10 +528,10 @@ export default function DriverPage() {
     };
 
     void fetchDriver();
-    // Ultra-responsive 1s polling for real-time Gojek-like sync
+    // Polling 2.5s agar sinkron stabil tanpa osilasi bolak-balik antar container
     const interval = setInterval(() => {
       if (active) void fetchDriver();
-    }, 1000);
+    }, 2500);
     return () => {
       active = false;
       clearInterval(interval);
@@ -606,8 +610,9 @@ export default function DriverPage() {
       if (acceptedOrder) {
         playOrderChime();
         setActiveOrder(acceptedOrder);
+        chimedOrderIdsRef.current.add(orderId);
         setIncomingOrders((prev) => prev.filter((o) => o.id !== orderId));
-        setDismissedModalIds((prev) => prev.filter((id) => id !== orderId));
+        setDismissedModalIds((prev) => (prev.includes(orderId) ? prev : [...prev, orderId]));
         setAcceptNotification(
           `✓ Order ${acceptedOrder.kode} Berhasil Diambil! Segera meluncur ke ${acceptedOrder.jemputAlamat} untuk menjemput ${acceptedOrder.penumpangNama || "penumpang"}.`,
         );
@@ -635,8 +640,9 @@ export default function DriverPage() {
   async function handleRejectOrder(orderId: number) {
     if (!driver) return;
     rejectedOrderIdsRef.current.add(orderId);
+    chimedOrderIdsRef.current.add(orderId);
     setIncomingOrders((prev) => prev.filter((o) => o.id !== orderId));
-    setDismissedModalIds((prev) => prev.filter((id) => id !== orderId));
+    setDismissedModalIds((prev) => (prev.includes(orderId) ? prev : [...prev, orderId]));
     setAcceptNotification("Pesanan berhasil dilewati.");
     try {
       await fetch("/api/driver/active", {
@@ -948,7 +954,10 @@ export default function DriverPage() {
 
   const isOnline = driver?.status === "ONLINE" || driver?.status === "ON_TRIP";
   const incomingAlertOrder = incomingOrders.find(
-    (o) => !dismissedModalIds.includes(o.id),
+    (o) =>
+      !dismissedModalIds.includes(o.id) &&
+      o.id !== activeOrder?.id &&
+      o.status === "MENCARI_DRIVER",
   );
 
   // Handle Driver Logout

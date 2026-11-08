@@ -217,7 +217,24 @@ export default function AdminPage() {
         const driversJson = await driversRes.json();
 
         if (!active) return;
-        if (statsRes.ok) setStats(statsJson);
+        if (statsRes.ok && statsJson) {
+          setStats((prev) => {
+            if (!prev) return statsJson;
+            const mergedLive = (statsJson.liveOrders || []).map((incoming: LiveOrderItem) => {
+              const existing = prev.liveOrders?.find((p) => p.id === incoming.id);
+              if (existing) {
+                const priorityOrder = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+                const existingIdx = priorityOrder.indexOf(existing.status);
+                const incomingIdx = priorityOrder.indexOf(incoming.status);
+                if (existingIdx > incomingIdx) {
+                  return { ...incoming, status: existing.status };
+                }
+              }
+              return incoming;
+            });
+            return { ...statsJson, liveOrders: mergedLive };
+          });
+        }
         if (driversRes.ok && driversJson.drivers) setDrivers(driversJson.drivers);
         if (driversRes.ok && driversJson.recentReviews) setReviews(driversJson.recentReviews);
         setLastSyncTime(
@@ -233,10 +250,10 @@ export default function AdminPage() {
     };
 
     void fetchAdminData();
-    // Polling cepat 1.5 detik agar perubahan dari tab Penumpang & Driver langsung terlihat real-time
+    // Polling stabil 3.0 detik agar hemat bandwidth dan mencegah race-condition antar serverless instance
     const interval = setInterval(() => {
       if (active) void fetchAdminData();
-    }, 1500);
+    }, 3000);
     return () => {
       active = false;
       clearInterval(interval);

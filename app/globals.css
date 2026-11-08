@@ -4162,7 +4162,7 @@ td:first-child {
 /* ROADSIDE INTERSECTION GROUP (MELUNCUR MASUK DARI KANAN SAAT JEDA & KELUAR KE KIRI SAAT LANJUT) */
 .roadside-intersection-group {
   position: absolute;
-  left: calc(50% + 205px);
+  left: calc(50% + 252px);
   bottom: 0;
   height: 100%;
   z-index: 4; /* Di atas jalan aspal (z-index 3) dan di belakang bodi becak (z-index 5) */
@@ -4988,16 +4988,16 @@ td:first-child {
   }
   .becak-position-wrap {
     bottom: 20px;
-    transform: translateX(-56%) scale(0.64);
+    transform: translateX(-68%) scale(0.58);
     transform-origin: bottom center;
   }
   .roadside-intersection-group {
-    left: calc(50% + 52px);
+    left: calc(50% + 68px);
   }
   .intersection-traffic-light {
     left: 8px;
     bottom: 64px;
-    transform: scale(0.74);
+    transform: scale(0.70);
     transform-origin: bottom left;
   }
   .traffic-signpost-plate {
@@ -5028,16 +5028,16 @@ td:first-child {
   }
   .becak-position-wrap {
     bottom: 16px;
-    transform: translateX(-58%) scale(0.52);
+    transform: translateX(-70%) scale(0.50);
     transform-origin: bottom center;
   }
   .roadside-intersection-group {
-    left: calc(50% + 40px);
+    left: calc(50% + 48px);
   }
   .intersection-traffic-light {
     left: 6px;
-    bottom: 60px;
-    transform: scale(0.64);
+    bottom: 58px;
+    transform: scale(0.60);
     transform-origin: bottom left;
   }
   .traffic-signpost-plate {
