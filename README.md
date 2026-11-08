@@ -136,11 +136,11 @@ Buka peramban Anda di **`http://localhost:3000`**.
 
 Pada halaman **`http://localhost:3000/login`**, telah disediakan tombol **Masuk 1-Klik** untuk mempermudah penilaian juri:
 
-| Peran | Email | Kata Sandi | Halaman Utama |
-| :--- | :--- | :--- | :--- |
-| **Penumpang** | `edrick@gmail.com` | `password123` | `/pelanggan` |
-| **Mitra Driver** | `budi@becak.test` | `password123` | `/driver` |
-| **Operations Admin**| `admin@becak.test` | `admin123` | `/admin` |
+| Peran | Nama Persona | Email | Kata Sandi | Halaman Utama |
+| :--- | :--- | :--- | :--- | :--- |
+| **Penumpang** | Rina Kusuma (Wisatawan) | `rina@becak.test` | `password123` | `/pelanggan` |
+| **Mitra Driver** | Budi Santoso (Unit BL-001) | `budi@becak.test` | `password123` | `/driver` |
+| **Operations Admin** | Admin Operasional | `admin@becak.test` | `admin123` | `/admin` |
 
 ---
 
