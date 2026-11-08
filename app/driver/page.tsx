@@ -2011,6 +2011,7 @@ export default function DriverPage() {
                     }}
                   >
                     <TripChat
+                      key={`driver_chat_${activeOrder.id}`}
                       orderId={activeOrder.id}
                       currentUserRole="DRIVER"
                       currentUserName={`${driverDisplayName} (Driver ${driver?.unit || "BL-001"})`}

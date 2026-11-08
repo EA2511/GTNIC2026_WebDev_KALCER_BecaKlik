@@ -1884,6 +1884,7 @@ function PelangganContent() {
       localStorage.removeItem("becak_active_order_id");
     }
     setActiveOrder(null);
+    setActiveTab("tracking");
     setIsSimulating(false);
     setRatingSubmitted(false);
     setSearchSeconds(0);
@@ -5980,6 +5981,7 @@ function PelangganContent() {
                         </span>
                       </div>
                       <TripChat
+                        key={`passenger_chat_${activeOrder.id}`}
                         orderId={activeOrder.id}
                         currentUserRole="PENUMPANG"
                         currentUserName={activeOrder.penumpangNama || guestName}

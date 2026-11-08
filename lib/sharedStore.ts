@@ -1540,18 +1540,11 @@ export const sharedStore = {
     }
   },
 
-  // Chat In-App Real-Time antara Penumpang & Driver (Tersinkron penuh per orderId)
+  // Chat In-App Real-Time antara Penumpang & Driver (Tersinkron penuh per orderId secara independen)
   getChatMessages(orderId: number): SharedChatMessage[] {
     const numId = Number(orderId);
-    const directList = store.chatMessages.get(numId) || [];
-    if (store.orders.has(numId) || directList.length > 0) {
-      return directList;
-    }
-    const activeOrder = this.getActiveOrder();
-    if (activeOrder) {
-      return store.chatMessages.get(activeOrder.id) || [];
-    }
-    return directList;
+    if (!numId) return [];
+    return store.chatMessages.get(numId) || [];
   },
 
   addChatMessage(
@@ -1564,13 +1557,10 @@ export const sharedStore = {
     }
   ): SharedChatMessage {
     const numId = Number(orderId);
-    const targetId = store.orders.has(numId)
-      ? numId
-      : this.getActiveOrder()?.id || numId;
-    const list = store.chatMessages.get(targetId) || [];
+    const list = store.chatMessages.get(numId) || [];
     const newMsg: SharedChatMessage = {
       id: store.nextChatId++,
-      orderId: targetId,
+      orderId: numId,
       senderRole: data.senderRole,
       senderId: data.senderId,
       senderNama: data.senderNama,
@@ -1578,10 +1568,7 @@ export const sharedStore = {
       createdAt: new Date().toISOString(),
     };
     list.push(newMsg);
-    store.chatMessages.set(targetId, list);
-    if (targetId !== numId) {
-      store.chatMessages.set(numId, list);
-    }
+    store.chatMessages.set(numId, list);
     savePersistedCache(store);
 
     return newMsg;

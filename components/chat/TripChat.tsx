@@ -41,7 +41,7 @@ export default function TripChat({
 }: TripChatProps) {
   const storageKey = `becaklik_chat_${orderId}`;
 
-  // Initial messages from localStorage (prevents flashing & guarantees persistence)
+  // Initial messages from localStorage (strictly filtered by current orderId)
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -49,7 +49,7 @@ export default function TripChat({
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            return parsed.filter((m: ChatMessage) => m && m.orderId === orderId);
           }
         }
       } catch {}
@@ -57,25 +57,42 @@ export default function TripChat({
     return [];
   });
 
+  // Reset and load clean isolated chat when orderId changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(`becaklik_chat_${orderId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setMessages(parsed.filter((m: ChatMessage) => m && m.orderId === orderId));
+            return;
+          }
+        }
+      } catch {}
+    }
+    setMessages([]);
+  }, [orderId]);
+
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
 
-  // Helper to deduplicate and sort messages
+  // Helper to deduplicate and sort messages strictly for current orderId
   const mergeMessages = useCallback((prevList: ChatMessage[], incomingList: ChatMessage[]): ChatMessage[] => {
     const map = new Map<string, ChatMessage>();
 
-    // Masukkan pesan yang sudah ada
+    // Masukkan pesan yang sudah ada khusus orderId ini
     for (const m of prevList) {
-      if (!m || !m.pesan) continue;
+      if (!m || !m.pesan || m.orderId !== orderId) continue;
       const key = `${m.id || ''}_${m.pesan}_${m.senderRole}`;
       map.set(key, m);
     }
 
-    // Gabungkan pesan dari server / broadcast tanpa menghapus pesan lokal
+    // Gabungkan pesan dari server / broadcast tanpa mencampur aduk order lain
     for (const m of incomingList) {
-      if (!m || !m.pesan) continue;
+      if (!m || !m.pesan || m.orderId !== orderId) continue;
       const key = `${m.id || ''}_${m.pesan}_${m.senderRole}`;
       if (!map.has(key)) {
         map.set(key, m);
@@ -86,7 +103,7 @@ export default function TripChat({
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    // Simpan salinan terbaru ke localStorage
+    // Simpan salinan terbaru ke localStorage khusus orderId ini
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(storageKey, JSON.stringify(merged));
@@ -94,7 +111,7 @@ export default function TripChat({
     }
 
     return merged;
-  }, [storageKey]);
+  }, [orderId, storageKey]);
 
   // 1. Sinkronisasi Antar Tab (Driver <-> Penumpang) via BroadcastChannel
   useEffect(() => {
@@ -106,7 +123,9 @@ export default function TripChat({
       bc.onmessage = (event) => {
         if (event.data?.type === 'NEW_CHAT' && event.data.message) {
           const incoming: ChatMessage = event.data.message;
-          setMessages((prev) => mergeMessages(prev, [incoming]));
+          if (incoming && incoming.orderId === orderId) {
+            setMessages((prev) => mergeMessages(prev, [incoming]));
+          }
         }
       };
     } catch {
@@ -119,7 +138,8 @@ export default function TripChat({
         try {
           const parsed = JSON.parse(e.newValue);
           if (Array.isArray(parsed)) {
-            setMessages((prev) => mergeMessages(prev, parsed));
+            const filtered = parsed.filter((m: ChatMessage) => m && m.orderId === orderId);
+            setMessages((prev) => mergeMessages(prev, filtered));
           }
         } catch {}
       }
@@ -132,7 +152,7 @@ export default function TripChat({
     };
   }, [orderId, storageKey, mergeMessages]);
 
-  // 2. Polling pesan dari server (Serverless-Safe: tidak pernah menghapus pesan lokal jika server return kosong)
+  // 2. Polling pesan dari server (Serverless-Safe: hanya memuat pesan khusus orderId ini)
   useEffect(() => {
     let isMounted = true;
 
@@ -142,8 +162,9 @@ export default function TripChat({
           cache: 'no-store',
         });
         const data = await res.json();
-        if (isMounted && Array.isArray(data.messages) && data.messages.length > 0) {
-          setMessages((prev) => mergeMessages(prev, data.messages));
+        if (isMounted && Array.isArray(data.messages)) {
+          const orderMessages = data.messages.filter((m: ChatMessage) => m && m.orderId === orderId);
+          setMessages((prev) => mergeMessages(prev, orderMessages));
         }
       } catch {
         // Abaikan offline / error sementara
