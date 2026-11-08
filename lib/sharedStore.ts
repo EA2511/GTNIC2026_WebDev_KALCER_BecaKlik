@@ -187,6 +187,76 @@ export const INITIAL_REGISTERED_USERS: SharedRegisteredUser[] = [
 
 const INITIAL_RATINGS: SharedRating[] = [
   {
+    id: 1015,
+    orderId: 1015,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Perjalanan nyaman dan hening.',
+    tip: 0,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Hari ini, 10:04',
+    timestamp: 1794107089636,
+  },
+  {
+    id: 1014,
+    orderId: 1014,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Perjalanan nyaman dan hening.',
+    tip: 0,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Hari ini, 09:44',
+    timestamp: 1794105866745,
+  },
+  {
+    id: 1011,
+    orderId: 1011,
+    penumpangNama: 'Wowo',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Driver Ramah & Sopan',
+    komentar: 'MBG',
+    tip: 2000,
+    rute: 'Universitas Majalengka (Kampus UNMA) ➔ Pendopo Kabupaten Majalengka (Kantor Bupati)',
+    createdAt: 'Hari ini, 09:14',
+    timestamp: 1794104070313,
+  },
+  {
+    id: 1010,
+    orderId: 1010,
+    penumpangNama: 'Khalil',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Mas nya baik hati',
+    tip: 10000,
+    rute: 'Bandara Internasional Jawa Barat (BIJB) Kertajati ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam',
+    createdAt: 'Hari ini, 08:49',
+    timestamp: 1794102562243,
+  },
+  {
+    id: 1009,
+    orderId: 1009,
+    penumpangNama: 'Edrick Andreas',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Rute Cepat & Aman',
+    komentar: 'Perjalanan nyaman dan hening.',
+    tip: 20000,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ SMK Negeri 1 Panyingkiran Majalengka',
+    createdAt: 'Hari ini, 00:30',
+    timestamp: 1794072652760,
+  },
+  {
     id: 1001,
     orderId: 1001,
     penumpangNama: 'Edrick Andreas',
@@ -1272,7 +1342,7 @@ export const sharedStore = {
     }
 
     const now = Date.now();
-    if (!forceAdvance && order.lastStepAt && now - order.lastStepAt < 900) {
+    if (!forceAdvance && order.lastStepAt && now - order.lastStepAt < 200) {
       return order;
     }
     order.lastStepAt = now;

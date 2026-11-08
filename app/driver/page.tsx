@@ -355,6 +355,56 @@ export default function DriverPage() {
   const [reviews, setReviews] = useState<ReviewInfo[]>(() => {
     const defaultList: ReviewInfo[] = [
       {
+        id: 1015,
+        penumpangNama: "Rina Kusuma",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar: "Perjalanan nyaman dan hening.",
+        tip: 0,
+        rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+        createdAt: "Hari ini, 10:04",
+      },
+      {
+        id: 1014,
+        penumpangNama: "Rina Kusuma",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar: "Perjalanan nyaman dan hening.",
+        tip: 0,
+        rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+        createdAt: "Hari ini, 09:44",
+      },
+      {
+        id: 1011,
+        penumpangNama: "Wowo",
+        skor: 5,
+        kategori: "Driver Ramah & Sopan",
+        komentar: "MBG",
+        tip: 2000,
+        rute: "Universitas Majalengka (Kampus UNMA) ➔ Pendopo Kabupaten Majalengka (Kantor Bupati)",
+        createdAt: "Hari ini, 09:14",
+      },
+      {
+        id: 1010,
+        penumpangNama: "Khalil",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar: "Mas nya baik hati",
+        tip: 10000,
+        rute: "Bandara Internasional Jawa Barat (BIJB) Kertajati ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam",
+        createdAt: "Hari ini, 08:49",
+      },
+      {
+        id: 1009,
+        penumpangNama: "Edrick Andreas",
+        skor: 5,
+        kategori: "Rute Cepat & Aman",
+        komentar: "Perjalanan nyaman dan hening.",
+        tip: 20000,
+        rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ SMK Negeri 1 Panyingkiran Majalengka",
+        createdAt: "Hari ini, 00:30",
+      },
+      {
         id: 1001,
         penumpangNama: "Edrick Andreas",
         skor: 5,
@@ -917,6 +967,8 @@ export default function DriverPage() {
 
     const timer = setInterval(async () => {
       try {
+        if (activeOrderProgressRef.current >= 100) return;
+
         const res = await fetch("/api/simulation/step", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -927,18 +979,29 @@ export default function DriverPage() {
           }),
         });
         const data = await res.json().catch(() => null);
+
+        let safeProg = 0;
+        let safeStatus: OrderInfo['status'] = 'BERJALAN';
+
         if (data?.order) {
           setActiveOrder((prev) => {
             if (!prev || prev.id !== data.order.id) return prev;
             if (prev.status === "SELESAI") return prev;
-            const safeProg = Math.max(
-              prev.simulationProgress || 0,
-              data.order.simulationProgress || 0,
-            );
+
+            const serverProg = Number(data.order.simulationProgress || 0);
+            const prevProg = Number(prev.simulationProgress || 0);
+            // Jamin progres selalu melaju mulus ke depan minimal +1.5% per detik
+            safeProg = Math.min(100, Math.max(prevProg + 1.5, serverProg));
+
             const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
             const prevIdx = statusRank.indexOf(prev.status);
             const incomingIdx = statusRank.indexOf(data.order.status);
-            const safeStatus = (prevIdx > incomingIdx ? prev.status : data.order.status) as OrderInfo['status'];
+            safeStatus = (prevIdx > incomingIdx ? prev.status : data.order.status) as OrderInfo['status'];
+            if (safeProg >= 100) safeStatus = 'SELESAI';
+            else if (safeProg >= 15) safeStatus = 'BERJALAN';
+            else if (safeProg >= 8) safeStatus = 'DIJEMPUT';
+
+            activeOrderProgressRef.current = safeProg;
 
             return {
               ...prev,
@@ -954,8 +1017,8 @@ export default function DriverPage() {
             bc.postMessage({
               type: "SIM_PROGRESS",
               orderId: activeOrdId,
-              progress: data.order.simulationProgress,
-              status: data.order.status,
+              progress: safeProg || data.order.simulationProgress,
+              status: safeStatus || data.order.status,
             });
             bc.close();
           } catch {}
@@ -965,7 +1028,8 @@ export default function DriverPage() {
             if (!prev || prev.id !== activeOrdId) return prev;
             if (prev.status === "SELESAI") return prev;
             const nextProg = Math.min(100, (prev.simulationProgress || 0) + 1.5);
-            const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 20 ? "BERJALAN" : prev.status;
+            const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 15 ? "BERJALAN" : nextProg >= 8 ? "DIJEMPUT" : prev.status;
+            activeOrderProgressRef.current = nextProg;
             return {
               ...prev,
               simulationProgress: nextProg,
@@ -979,7 +1043,8 @@ export default function DriverPage() {
           if (!prev || prev.id !== activeOrdId) return prev;
           if (prev.status === "SELESAI") return prev;
           const nextProg = Math.min(100, (prev.simulationProgress || 0) + 1.5);
-          const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 20 ? "BERJALAN" : prev.status;
+          const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 15 ? "BERJALAN" : nextProg >= 8 ? "DIJEMPUT" : prev.status;
+          activeOrderProgressRef.current = nextProg;
           return {
             ...prev,
             simulationProgress: nextProg,
@@ -990,7 +1055,7 @@ export default function DriverPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeOrdId, activeOrdStatus, autoSimDriver]);
+  }, [activeOrdId, autoSimDriver]);
 
   // Sinkronisasi Lintas-Tab Driver <-> Penumpang (Zero Latency Lockstep)
   useEffect(() => {
@@ -1138,10 +1203,16 @@ export default function DriverPage() {
       driverMapPos = routeCoords[routeCoords.length - 1];
       driverMapHeading = 0;
     } else if (prog < 15) {
-      driverMapPos = routeCoords[0];
-      driverMapHeading = routeCoords.length > 1
-        ? interpolateRoutePosition(routeCoords, 0).heading
-        : 0;
+      // Driver melaju dari radius pangkalan mendekati titik jemput penumpang secara dinamis & mulus
+      const approachRoute = generatePickupApproachRoute(
+        routeCoords[0][0],
+        routeCoords[0][1],
+        routeCoords[1]
+      );
+      const approachProg = Math.min(100, Math.max(0, (prog / 15) * 100));
+      const interp = interpolateRoutePosition(approachRoute, approachProg);
+      driverMapPos = interp.position;
+      driverMapHeading = interp.heading;
     } else {
       const tripProg = Math.min(100, Math.max(0, ((prog - 15) / 85) * 100));
       const interp = interpolateRoutePosition(routeCoords, tripProg);

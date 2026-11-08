@@ -148,6 +148,7 @@ export interface CompletedTrip {
   kode: string;
   tanggal: string;
   timestamp?: number;
+  penumpangNama?: string;
   jemputAlamat: string;
   tujuanAlamat: string;
   jarakKm: number;
@@ -165,6 +166,106 @@ export interface CompletedTrip {
 }
 
 const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
+  {
+    id: 1015,
+    kode: "ORD-20261108-914",
+    tanggal: "Hari ini, 10:04",
+    timestamp: 1794107089636,
+    jemputAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    tujuanAlamat: "Bunderan Munjul & Tugu Bola Dunia",
+    jarakKm: 1.48,
+    durasiMenit: 6,
+    tarif: 9440,
+    diskon: 0,
+    tip: 0,
+    totalBayar: 9440,
+    metode: "QRIS",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    ratingScore: 5,
+    ratingCategory: "Tepat Waktu & Hening",
+    ratingComment: "Perjalanan nyaman dan hening.",
+  },
+  {
+    id: 1014,
+    kode: "ORD-20261108-736",
+    tanggal: "Hari ini, 09:44",
+    timestamp: 1794105866745,
+    jemputAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    tujuanAlamat: "Bunderan Munjul & Tugu Bola Dunia",
+    jarakKm: 1.48,
+    durasiMenit: 6,
+    tarif: 9440,
+    diskon: 0,
+    tip: 0,
+    totalBayar: 9440,
+    metode: "CASH",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    ratingScore: 5,
+    ratingCategory: "Tepat Waktu & Hening",
+    ratingComment: "Perjalanan nyaman dan hening.",
+  },
+  {
+    id: 1011,
+    kode: "ORD-20261108-425",
+    tanggal: "Hari ini, 09:14",
+    timestamp: 1794104070313,
+    jemputAlamat: "Universitas Majalengka (Kampus UNMA)",
+    tujuanAlamat: "Pendopo Kabupaten Majalengka (Kantor Bupati)",
+    jarakKm: 2.86,
+    durasiMenit: 11,
+    tarif: 13580,
+    diskon: 3395,
+    tip: 2000,
+    totalBayar: 12185,
+    metode: "QRIS",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    ratingScore: 5,
+    ratingCategory: "Driver Ramah & Sopan",
+    ratingComment: "MBG",
+  },
+  {
+    id: 1010,
+    kode: "ORD-20261108-904",
+    tanggal: "Hari ini, 08:49",
+    timestamp: 1794102562243,
+    jemputAlamat: "Bandara Internasional Jawa Barat (BIJB) Kertajati",
+    tujuanAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    jarakKm: 28.9,
+    durasiMenit: 116,
+    tarif: 91700,
+    diskon: 3000,
+    tip: 10000,
+    totalBayar: 98700,
+    metode: "QRIS",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    ratingScore: 5,
+    ratingCategory: "Tepat Waktu & Hening",
+    ratingComment: "Mas nya baik hati",
+  },
+  {
+    id: 1009,
+    kode: "ORD-20261107-278",
+    tanggal: "Hari ini, 00:30",
+    timestamp: 1794072652760,
+    jemputAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    tujuanAlamat: "SMK Negeri 1 Panyingkiran Majalengka",
+    jarakKm: 3.66,
+    durasiMenit: 15,
+    tarif: 17980,
+    diskon: 4495,
+    tip: 20000,
+    totalBayar: 33485,
+    metode: "QRIS",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    ratingScore: 5,
+    ratingCategory: "Rute Cepat & Aman",
+    ratingComment: "Perjalanan nyaman dan hening.",
+  },
   {
     id: 1001,
     kode: "ORD-20261107-613",
@@ -818,7 +919,7 @@ function PelangganContent() {
               action: "SYNC_HISTORY",
               trips: list.map((t) => ({
                 ...t,
-                penumpangNama: t.id === 1001 ? "Edrick Andreas" : guestName,
+                penumpangNama: t.penumpangNama || (t.id === 1001 ? "Edrick Andreas" : guestName),
               })),
             }),
           }).catch(() => {});
@@ -1983,7 +2084,13 @@ function PelangganContent() {
         return routeCoords[routeCoords.length - 1];
       }
       if (prog < 15) {
-        return routeCoords[0];
+        const approachRoute = generatePickupApproachRoute(
+          routeCoords[0][0],
+          routeCoords[0][1],
+          routeCoords[1]
+        );
+        const approachProg = Math.min(100, Math.max(0, (prog / 15) * 100));
+        return interpolateRoutePosition(approachRoute, approachProg).position;
       }
       const tripProg = Math.min(100, Math.max(0, ((prog - 15) / 85) * 100));
       return interpolateRoutePosition(routeCoords, tripProg).position;
@@ -2008,9 +2115,13 @@ function PelangganContent() {
     const prog = activeOrder.simulationProgress || 0;
     if (routeCoords && routeCoords.length > 0) {
       if (prog < 15) {
-        return routeCoords.length > 1
-          ? interpolateRoutePosition(routeCoords, 0).heading
-          : 0;
+        const approachRoute = generatePickupApproachRoute(
+          routeCoords[0][0],
+          routeCoords[0][1],
+          routeCoords[1]
+        );
+        const approachProg = Math.min(100, Math.max(0, (prog / 15) * 100));
+        return interpolateRoutePosition(approachRoute, approachProg).heading;
       }
       const tripProg = Math.min(100, Math.max(0, ((prog - 15) / 85) * 100));
       return interpolateRoutePosition(routeCoords, tripProg).heading;
