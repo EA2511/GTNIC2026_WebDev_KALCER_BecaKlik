@@ -167,6 +167,26 @@ export interface CompletedTrip {
 
 const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
   {
+    id: 1016,
+    kode: "ORD-20261108-849",
+    tanggal: "Hari ini, 19:58",
+    timestamp: 1794142680000,
+    jemputAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    tujuanAlamat: "Bunderan Munjul & Tugu Bola Dunia",
+    jarakKm: 1.6,
+    durasiMenit: 8,
+    tarif: 9800,
+    diskon: 0,
+    tip: 20000,
+    totalBayar: 29800,
+    metode: "QRIS",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    ratingScore: 5,
+    ratingCategory: "Rute Cepat & Aman",
+    ratingComment: "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
+  },
+  {
     id: 1015,
     kode: "ORD-20261108-914",
     tanggal: "Hari ini, 10:04",

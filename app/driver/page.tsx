@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bike,
@@ -136,6 +136,7 @@ interface OrderInfo {
 
 interface ReviewInfo {
   id: number;
+  orderId?: number;
   penumpangNama: string;
   skor: number;
   kategori: string;
@@ -146,26 +147,43 @@ interface ReviewInfo {
   timestamp?: number;
 }
 
+function getReviewTimestamp(rev: ReviewInfo, now: number = Date.now()): number {
+  if (typeof rev.timestamp === "number" && rev.timestamp > 1700000000000) {
+    return rev.timestamp;
+  }
+  const orderId = rev.orderId ?? (rev.id < 1_000_000_000_000 ? rev.id : undefined);
+  if (orderId === 1016) return 1794142680000;
+  if (orderId === 1015) return 1794107089636;
+  if (orderId === 1014) return 1794105866745;
+  if (orderId === 1011) return 1794104070313;
+  if (orderId === 1010) return 1794102562243;
+  if (orderId === 1009) return 1794072652760;
+  if (orderId === 1008) return 1794069237984;
+  if (orderId === 1007) return 1794068500000;
+  if (orderId === 1006) return 1794067500000;
+  if (orderId === 1005) return 1794066200000;
+  if (orderId === 1004) return 1794064800000;
+  if (orderId === 1001) return 1794044220000; // 7 Nov 2026, 16:37 WIB (Kemarin)
+  if (orderId === 991) return Date.UTC(2026, 10, 3, 7, 20, 0);
+  if (orderId === 990) return Date.UTC(2026, 10, 2, 2, 45, 0);
+  if (orderId === 989) return Date.UTC(2026, 10, 1, 8, 35, 0);
+
+  const raw = (rev.createdAt || "").toLowerCase();
+  if (raw.includes("menit lalu")) {
+    const m = raw.match(/(\d+)\s*menit/);
+    if (m) return now - parseInt(m[1], 10) * 60000;
+  } else if (raw.includes("jam lalu")) {
+    const h = raw.match(/(\d+)\s*jam/);
+    if (h) return now - parseInt(h[1], 10) * 3600000;
+  } else if (raw.includes("baru saja")) {
+    return now;
+  }
+
+  return 1700000000000 + (orderId || rev.id || 0);
+}
+
 function formatReviewDynamicTime(rev: ReviewInfo, now: number = Date.now()): string {
-  let ts = typeof rev.timestamp === "number" && rev.timestamp > 1700000000000 ? rev.timestamp : 0;
-
-  if (rev.id === 1001) {
-    ts = Date.UTC(2026, 10, 7, 9, 37, 0); // 7 Nov 2026, 16:37 WIB (Kemarin)
-  }
-
-  if (!ts) {
-    const raw = (rev.createdAt || "").toLowerCase();
-    if (raw.includes("menit lalu")) {
-      const m = raw.match(/(\d+)\s*menit/);
-      if (m) ts = now - parseInt(m[1], 10) * 60000;
-    } else if (raw.includes("jam lalu")) {
-      const h = raw.match(/(\d+)\s*jam/);
-      if (h) ts = now - parseInt(h[1], 10) * 3600000;
-    } else if (raw.includes("baru saja")) {
-      ts = now;
-    }
-  }
-
+  const ts = getReviewTimestamp(rev, now);
   if (!ts) return rev.createdAt || "Baru saja";
 
   const diffMs = Math.max(0, now - ts);
@@ -212,16 +230,46 @@ function formatReviewDynamicTime(rev: ReviewInfo, now: number = Date.now()): str
 
 function mergeReviews(prev: ReviewInfo[], incoming: ReviewInfo[]): ReviewInfo[] {
   if (!Array.isArray(incoming) || incoming.length === 0) return prev;
-  const map = new Map<number | string, ReviewInfo>();
+  const map = new Map<string, ReviewInfo>();
+
+  const getDedupeKey = (r: ReviewInfo): string => {
+    if (r.orderId != null) return `ord-${r.orderId}`;
+    if (r.id != null && r.id < 1_000_000_000_000) return `ord-${r.id}`;
+    return `id-${r.id}`;
+  };
+
   for (const r of incoming) {
-    if (r && r.id != null) map.set(r.id, r);
-  }
-  for (const r of prev) {
-    if (r && r.id != null && !map.has(r.id)) {
-      map.set(r.id, r);
+    if (r && (r.id != null || r.orderId != null)) {
+      const key = getDedupeKey(r);
+      const ts = getReviewTimestamp(r);
+      map.set(key, {
+        ...r,
+        timestamp: ts,
+        orderId: r.orderId ?? (r.id < 1_000_000_000_000 ? r.id : undefined),
+      });
     }
   }
-  return Array.from(map.values()).sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+
+  for (const r of prev) {
+    if (r && (r.id != null || r.orderId != null)) {
+      const key = getDedupeKey(r);
+      if (!map.has(key)) {
+        const ts = getReviewTimestamp(r);
+        map.set(key, {
+          ...r,
+          timestamp: ts,
+          orderId: r.orderId ?? (r.id < 1_000_000_000_000 ? r.id : undefined),
+        });
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    const tsA = getReviewTimestamp(a);
+    const tsB = getReviewTimestamp(b);
+    if (tsB !== tsA) return tsB - tsA;
+    return (b.orderId || b.id || 0) - (a.orderId || a.id || 0);
+  });
 }
 
 export default function DriverPage() {
@@ -265,13 +313,15 @@ export default function DriverPage() {
       if (!Array.isArray(parsed) || parsed.length === 0) return;
       const formattedReviews: ReviewInfo[] = parsed.map((t) => ({
         id: t.id,
+        orderId: t.id,
         penumpangNama: t.penumpangNama || "Penumpang",
         skor: t.ratingScore || 5,
         kategori: t.ratingCategory || "Sangat Memuaskan",
         komentar: t.ratingComment || "Perjalanan nyaman dan hening.",
         tip: t.tip || 0,
         rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
-        createdAt: "Baru saja",
+        createdAt: t.tanggal || "Baru saja",
+        timestamp: typeof t.timestamp === "number" && t.timestamp > 0 ? t.timestamp : Date.now(),
       }));
       setReviews((prev) => mergeReviews(prev, formattedReviews));
       void fetch("/api/driver/active", {
@@ -355,7 +405,20 @@ export default function DriverPage() {
   const [reviews, setReviews] = useState<ReviewInfo[]>(() => {
     const defaultList: ReviewInfo[] = [
       {
+        id: 1016,
+        orderId: 1016,
+        penumpangNama: "Edrick Andreas",
+        skor: 5,
+        kategori: "Rute Cepat & Aman",
+        komentar: "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
+        tip: 20000,
+        rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+        createdAt: "Hari ini, 19:58",
+        timestamp: 1794142680000,
+      },
+      {
         id: 1015,
+        orderId: 1015,
         penumpangNama: "Rina Kusuma",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
@@ -363,9 +426,11 @@ export default function DriverPage() {
         tip: 0,
         rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
         createdAt: "Hari ini, 10:04",
+        timestamp: 1794107089636,
       },
       {
         id: 1014,
+        orderId: 1014,
         penumpangNama: "Rina Kusuma",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
@@ -373,9 +438,11 @@ export default function DriverPage() {
         tip: 0,
         rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
         createdAt: "Hari ini, 09:44",
+        timestamp: 1794105866745,
       },
       {
         id: 1011,
+        orderId: 1011,
         penumpangNama: "Wowo",
         skor: 5,
         kategori: "Driver Ramah & Sopan",
@@ -383,9 +450,11 @@ export default function DriverPage() {
         tip: 2000,
         rute: "Universitas Majalengka (Kampus UNMA) ➔ Pendopo Kabupaten Majalengka (Kantor Bupati)",
         createdAt: "Hari ini, 09:14",
+        timestamp: 1794104070313,
       },
       {
         id: 1010,
+        orderId: 1010,
         penumpangNama: "Khalil",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
@@ -393,9 +462,11 @@ export default function DriverPage() {
         tip: 10000,
         rute: "Bandara Internasional Jawa Barat (BIJB) Kertajati ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam",
         createdAt: "Hari ini, 08:49",
+        timestamp: 1794102562243,
       },
       {
         id: 1009,
+        orderId: 1009,
         penumpangNama: "Edrick Andreas",
         skor: 5,
         kategori: "Rute Cepat & Aman",
@@ -403,9 +474,35 @@ export default function DriverPage() {
         tip: 20000,
         rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ SMK Negeri 1 Panyingkiran Majalengka",
         createdAt: "Hari ini, 00:30",
+        timestamp: 1794072652760,
+      },
+      {
+        id: 1008,
+        orderId: 1008,
+        penumpangNama: "Rina Kusuma",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar: "Perjalanan memuaskan dan hening.",
+        tip: 5000,
+        rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+        createdAt: "Kemarin, 23:33",
+        timestamp: 1794069237984,
+      },
+      {
+        id: 1007,
+        orderId: 1007,
+        penumpangNama: "Rina Kusuma",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar: "Perjalanan memuaskan dan hening.",
+        tip: 5000,
+        rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+        createdAt: "Kemarin, 23:21",
+        timestamp: 1794068500000,
       },
       {
         id: 1001,
+        orderId: 1001,
         penumpangNama: "Edrick Andreas",
         skor: 5,
         kategori: "Rute Cepat & Aman",
@@ -413,9 +510,11 @@ export default function DriverPage() {
         tip: 20000,
         rute: "Universitas Majalengka (Kampus UNMA) ➔ RSUD Cideres Majalengka",
         createdAt: "Kemarin, 16:37",
+        timestamp: 1794044220000,
       },
       {
         id: 991,
+        orderId: 991,
         penumpangNama: "Rina Kusuma",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
@@ -424,9 +523,11 @@ export default function DriverPage() {
         tip: 2000,
         rute: "Alun-Alun Majalengka ➔ Pasar Mambo Sentra Kuliner",
         createdAt: "5 hari lalu, 14:20",
+        timestamp: Date.UTC(2026, 10, 3, 7, 20, 0),
       },
       {
         id: 990,
+        orderId: 990,
         penumpangNama: "Rina Kusuma",
         skor: 5,
         kategori: "Driver Ramah",
@@ -435,9 +536,11 @@ export default function DriverPage() {
         tip: 5000,
         rute: "Bunderan Munjul ➔ Gedung Juang Majalengka",
         createdAt: "6 hari lalu, 09:45",
+        timestamp: Date.UTC(2026, 10, 2, 2, 45, 0),
       },
       {
         id: 989,
+        orderId: 989,
         penumpangNama: "Ahmad Fauzi",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
@@ -446,9 +549,11 @@ export default function DriverPage() {
         tip: 3000,
         rute: "Jl. Siti Armilah ➔ Universitas Majalengka (UNMA)",
         createdAt: "1 Nov 2026, 15:35",
+        timestamp: Date.UTC(2026, 10, 1, 8, 35, 0),
       },
       {
         id: 988,
+        orderId: 988,
         penumpangNama: "Hj. Siti Rahmawati",
         skor: 5,
         kategori: "Driver Ramah & Sabar",
@@ -456,10 +561,12 @@ export default function DriverPage() {
           "Pak Budi sangat membantu membawakan belanjaan pasar saya sampai depan teras rumah.",
         tip: 5000,
         rute: "Pasar Sindangkasih Cigasong ➔ Perum Wijaya Kusuma Cijati",
-        createdAt: "1 jam lalu",
+        createdAt: "31 Okt 2026, 10:00",
+        timestamp: Date.UTC(2026, 9, 31, 3, 0, 0),
       },
       {
         id: 987,
+        orderId: 987,
         penumpangNama: "Dr. Hendra Pratama",
         skor: 5,
         kategori: "Kabin Bersih & Nyaman",
@@ -467,10 +574,12 @@ export default function DriverPage() {
           "Suspensi empuk dan bebas asap knalpot, sangat cocok untuk pasien lansia ke RSUD.",
         tip: 5000,
         rute: "Pemukiman Babakan Jawa ➔ RSUD Majalengka",
-        createdAt: "2 jam lalu",
+        createdAt: "30 Okt 2026, 11:15",
+        timestamp: Date.UTC(2026, 9, 30, 4, 15, 0),
       },
       {
         id: 986,
+        orderId: 986,
         penumpangNama: "Neng Dinda Permata",
         skor: 5,
         kategori: "Tarif Jujur & Transparan",
@@ -478,7 +587,8 @@ export default function DriverPage() {
           "Bayar pakai QRIS praktis banget, tarifnya pas sesuai aplikasi tanpa tawar-menawar.",
         tip: 2000,
         rute: "SMAN 1 Majalengka ➔ Surya Toserba Majalengka",
-        createdAt: "3 jam lalu",
+        createdAt: "29 Okt 2026, 13:30",
+        timestamp: Date.UTC(2026, 9, 29, 6, 30, 0),
       },
     ];
 
@@ -495,6 +605,15 @@ export default function DriverPage() {
     }
     return defaultList;
   });
+
+  const sortedDriverReviews = useMemo(() => {
+    return [...reviews].sort((a, b) => {
+      const tsA = getReviewTimestamp(a);
+      const tsB = getReviewTimestamp(b);
+      if (tsB !== tsA) return tsB - tsA;
+      return (b.orderId || b.id || 0) - (a.orderId || a.id || 0);
+    });
+  }, [reviews]);
 
   // Simpan ulasan Driver secara lokal agar tidak pernah hilang saat refresh atau restart
   useEffect(() => {
@@ -2966,9 +3085,9 @@ export default function DriverPage() {
               gap: "16px",
             }}
           >
-            {(showAllReviews ? reviews : reviews.slice(0, 6)).map((rev) => (
+            {(showAllReviews ? sortedDriverReviews : sortedDriverReviews.slice(0, 6)).map((rev) => (
               <div
-                key={rev.id}
+                key={rev.orderId ? `ord-${rev.orderId}` : `id-${rev.id}`}
                 style={{
                   background: "#f8fafc",
                   border: "1px solid #e2e8f0",

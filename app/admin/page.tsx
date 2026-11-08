@@ -129,6 +129,7 @@ interface DriverRow {
 
 interface AdminReview {
   id: number;
+  orderId?: number;
   penumpangNama: string;
   driverNama: string;
   unit: string;
@@ -138,6 +139,7 @@ interface AdminReview {
   tip?: number;
   rute?: string;
   createdAt: string;
+  timestamp?: number;
 }
 
 export default function AdminPage() {
@@ -145,6 +147,14 @@ export default function AdminPage() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [drivers, setDrivers] = useState<DriverRow[]>([]);
   const [reviews, setReviews] = useState<AdminReview[]>([]);
+  const sortedAdminReviews = useMemo(() => {
+    return [...reviews].sort((a, b) => {
+      const tsA = typeof a.timestamp === 'number' && a.timestamp > 0 ? a.timestamp : 0;
+      const tsB = typeof b.timestamp === 'number' && b.timestamp > 0 ? b.timestamp : 0;
+      if (tsB !== tsA) return tsB - tsA;
+      return (b.orderId || b.id || 0) - (a.orderId || a.id || 0);
+    });
+  }, [reviews]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('Semua status');
   const [sortBy, setSortBy] = useState<'rank' | 'trips' | 'income' | 'rating'>('rank');
@@ -192,7 +202,23 @@ export default function AdminPage() {
 
       if (statsRes.ok) setStats(statsJson);
       if (driversRes.ok && driversJson.drivers) setDrivers(driversJson.drivers);
-      if (driversRes.ok && driversJson.recentReviews) setReviews(driversJson.recentReviews);
+      if (driversRes.ok && driversJson.recentReviews) {
+        setReviews((prev) => {
+          const incoming: AdminReview[] = driversJson.recentReviews;
+          if (!prev || prev.length !== incoming.length) return incoming;
+          const isSame = prev.every((p, idx) => {
+            const inc = incoming[idx];
+            return (
+              inc &&
+              (inc.orderId || inc.id) === (p.orderId || p.id) &&
+              inc.skor === p.skor &&
+              inc.tip === p.tip &&
+              inc.createdAt === p.createdAt
+            );
+          });
+          return isSame ? prev : incoming;
+        });
+      }
       setLastSyncTime(
         new Date().toLocaleTimeString('id-ID', {
           hour: '2-digit',
@@ -236,7 +262,23 @@ export default function AdminPage() {
           });
         }
         if (driversRes.ok && driversJson.drivers) setDrivers(driversJson.drivers);
-        if (driversRes.ok && driversJson.recentReviews) setReviews(driversJson.recentReviews);
+        if (driversRes.ok && driversJson.recentReviews) {
+          setReviews((prev) => {
+            const incoming: AdminReview[] = driversJson.recentReviews;
+            if (!prev || prev.length !== incoming.length) return incoming;
+            const isSame = prev.every((p, idx) => {
+              const inc = incoming[idx];
+              return (
+                inc &&
+                (inc.orderId || inc.id) === (p.orderId || p.id) &&
+                inc.skor === p.skor &&
+                inc.tip === p.tip &&
+                inc.createdAt === p.createdAt
+              );
+            });
+            return isSame ? prev : incoming;
+          });
+        }
         setLastSyncTime(
           new Date().toLocaleTimeString('id-ID', {
             hour: '2-digit',
@@ -1663,9 +1705,9 @@ export default function AdminPage() {
               gap: '16px',
             }}
           >
-            {reviews.map((rev) => (
+            {sortedAdminReviews.map((rev) => (
               <div
-                key={rev.id}
+                key={rev.orderId ? `order-${rev.orderId}` : `rev-${rev.id}`}
                 style={{
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',

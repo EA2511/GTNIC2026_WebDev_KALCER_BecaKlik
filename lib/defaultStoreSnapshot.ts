@@ -725,10 +725,88 @@ export const SNAPSHOT_ORDERS: [number, SharedOrder][] = [
       "tip": 0,
       "countedTip": 0
     }
+  ],
+  [
+    1016,
+    {
+      "kode": "ORD-20261108-849",
+      "status": "SELESAI",
+      "jemputAlamat": "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+      "jemputLat": -6.8362,
+      "jemputLng": 108.2281,
+      "tujuanAlamat": "Bunderan Munjul & Tugu Bola Dunia",
+      "tujuanLat": -6.8295,
+      "tujuanLng": 108.2198,
+      "penumpangNama": "Edrick Andreas",
+      "penumpangEmail": "edrick@gmail.com",
+      "penumpangNoHp": "081298765432",
+      "jarakKm": 1.6,
+      "durasiMenit": 8,
+      "tarif": 9800,
+      "promoKode": "EDRICKHEMAT",
+      "diskon": 0,
+      "totalBayar": 29800,
+      "serviceType": "REGULER",
+      "passengerCount": 1,
+      "catatan": "Depan Alun-alun dekat Masjid Agung",
+      "metodePembayaran": "QRIS",
+      "simulationProgress": 100,
+      "routeGeometry": "[[-6.836199,108.227993],[-6.835512,108.228367],[-6.834744,108.227103],[-6.832961,108.223241],[-6.8295,108.2198]]",
+      "id": 1016,
+      "driverId": 1,
+      "driver": {
+        "id": 1,
+        "currentLat": -6.8295,
+        "currentLng": 108.2198,
+        "heading": 0,
+        "ratingAverage": 4.96,
+        "totalTrips": 64,
+        "user": {
+          "id": 2,
+          "nama": "Budi Santoso",
+          "noHp": "081234560001"
+        },
+        "vehicle": {
+          "kodeUnit": "BL-001",
+          "modelName": "Becak Listrik Majalengka EV",
+          "warna": "Biru Langit",
+          "kapasitas": 2,
+          "batteryPct": 94
+        }
+      },
+      "createdAt": "2026-11-08T12:58:00.000Z",
+      "dismissedByDriver": true,
+      "dismissedByPassenger": true,
+      "lastStepAt": 1794142710000,
+      "vehicle": {
+        "kodeUnit": "BL-001",
+        "modelName": "Becak Listrik Majalengka EV",
+        "warna": "Biru Langit",
+        "kapasitas": 2,
+        "batteryPct": 94
+      },
+      "countedInStats": true,
+      "tip": 20000,
+      "countedTip": 20000
+    }
   ]
 ];
 
 export const SNAPSHOT_RATINGS: SharedRating[] = [
+  {
+    "id": 1016,
+    "orderId": 1016,
+    "penumpangNama": "Edrick Andreas",
+    "driverNama": "Budi Santoso",
+    "unit": "BL-001",
+    "skor": 5,
+    "kategori": "Rute Cepat & Aman",
+    "komentar": "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
+    "tip": 20000,
+    "rute": "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    "createdAt": "Hari ini, 19:58",
+    "timestamp": 1794142680000
+  },
   {
     "id": 1794107115763,
     "orderId": 1015,
@@ -1264,10 +1342,10 @@ export const SNAPSHOT_FLEET_DRIVERS: SharedFleetDriver[] = [
 
 export const SNAPSHOT_DRIVER_STATS = {
   driverStatus: "ONLINE" as const,
-  driverRating: 4.95,
-  driverTotalTrips: 63,
-  driverCompletedToday: 21,
-  driverEarningsToday: 425738,
-  nextOrderId: 1016,
-  syncedHistoryIds: [990,991,1000,1006,1005,1002,1001,1008,1007,1004,1003,1009,1010,1011,1014,1015],
+  driverRating: 4.96,
+  driverTotalTrips: 64,
+  driverCompletedToday: 22,
+  driverEarningsToday: 455538,
+  nextOrderId: 1017,
+  syncedHistoryIds: [990,991,1000,1006,1005,1002,1001,1008,1007,1004,1003,1009,1010,1011,1014,1015,1016],
 };

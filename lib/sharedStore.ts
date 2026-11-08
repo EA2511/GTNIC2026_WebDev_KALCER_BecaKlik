@@ -187,6 +187,20 @@ export const INITIAL_REGISTERED_USERS: SharedRegisteredUser[] = [
 
 const INITIAL_RATINGS: SharedRating[] = [
   {
+    id: 1016,
+    orderId: 1016,
+    penumpangNama: 'Edrick Andreas',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Rute Cepat & Aman',
+    komentar: 'Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!',
+    tip: 20000,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Hari ini, 19:58',
+    timestamp: 1794142680000,
+  },
+  {
     id: 1015,
     orderId: 1015,
     penumpangNama: 'Rina Kusuma',
@@ -255,6 +269,76 @@ const INITIAL_RATINGS: SharedRating[] = [
     rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ SMK Negeri 1 Panyingkiran Majalengka',
     createdAt: 'Hari ini, 00:30',
     timestamp: 1794072652760,
+  },
+  {
+    id: 1008,
+    orderId: 1008,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Perjalanan memuaskan dan hening.',
+    tip: 5000,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Kemarin, 23:33',
+    timestamp: 1794069237984,
+  },
+  {
+    id: 1007,
+    orderId: 1007,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Perjalanan memuaskan dan hening.',
+    tip: 5000,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Kemarin, 23:21',
+    timestamp: 1794068500000,
+  },
+  {
+    id: 1006,
+    orderId: 1006,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Driver Ramah & Sopan',
+    komentar: 'Perjalanan memuaskan dan hening.',
+    tip: 10000,
+    rute: 'Rumah Warga (Jl. Siti Armilah, Majalengka Wetan) ➔ Universitas Majalengka (Kampus UNMA)',
+    createdAt: 'Kemarin, 23:05',
+    timestamp: 1794067500000,
+  },
+  {
+    id: 1005,
+    orderId: 1005,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Rute Cepat & Aman',
+    komentar: 'Perjalanan memuaskan dan hening.',
+    tip: 20000,
+    rute: 'Rumah Warga (Perum Wijaya Kusuma, Cijati) ➔ RSUD Majalengka (Pusat Layanan Medis)',
+    createdAt: 'Kemarin, 22:43',
+    timestamp: 1794066200000,
+  },
+  {
+    id: 1004,
+    orderId: 1004,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Armada Bersih',
+    komentar: 'Perjalanan memuaskan dan hening.',
+    tip: 5000,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Kemarin, 22:20',
+    timestamp: 1794064800000,
   },
   {
     id: 1001,
@@ -599,9 +683,11 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
   const now = Date.now();
 
   for (const r of list) {
-    if (!r || typeof r.orderId !== 'number') continue;
-    const seed = seedMap.get(r.orderId);
-    const orderTs = getLinkedOrderTimestamp(r.orderId);
+    if (!r) continue;
+    const orderId = r.orderId ?? (typeof r.id === 'number' && r.id < 1_000_000_000_000 ? r.id : undefined);
+    if (typeof orderId !== 'number') continue;
+    const seed = seedMap.get(orderId);
+    const orderTs = getLinkedOrderTimestamp(orderId);
 
     let ts =
       orderTs ||
@@ -609,19 +695,33 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
         ? r.timestamp
         : seed?.timestamp || parseRatingTimestamp(r, now));
 
-    // Order 1001 (Edrick Andreas) selalu 7 Nov 2026, 16:37 WIB jika bukan rating baru dengan timestamp valid
-    if (r.orderId === 1001) {
+    if (orderId === 1016) {
+      ts = 1794142680000;
+    }
+    if (orderId === 1001) {
       ts = Date.UTC(2026, 10, 7, 9, 37, 0);
     }
 
     const dynamicCreatedAt = formatDynamicReviewTime(ts, now);
     const normalized: SharedRating = {
       ...r,
+      orderId,
+      id: r.id || orderId,
       createdAt: dynamicCreatedAt,
       timestamp: ts,
     };
-    if (!deduped.has(normalized.orderId)) {
-      deduped.set(normalized.orderId, normalized);
+    if (!deduped.has(orderId)) {
+      deduped.set(orderId, normalized);
+    }
+  }
+
+  // Masukkan seed ratings dari INITIAL_RATINGS jika belum ada di deduped
+  for (const sr of INITIAL_RATINGS) {
+    if (!deduped.has(sr.orderId)) {
+      deduped.set(sr.orderId, {
+        ...sr,
+        createdAt: formatDynamicReviewTime(sr.timestamp, now),
+      });
     }
   }
 
@@ -943,6 +1043,36 @@ if (!store.orders.has(1001)) {
     createdAt: new Date(BASE_RATING_TIME + 60_000).toISOString(),
   });
 }
+if (!store.orders.has(1016)) {
+  store.orders.set(1016, {
+    id: 1016,
+    kode: 'ORD-20261108-849',
+    status: 'SELESAI',
+    jemputAlamat: 'Alun-Alun Majalengka & Masjid Agung Al-Imam',
+    jemputLat: -6.8362,
+    jemputLng: 108.2281,
+    tujuanAlamat: 'Bunderan Munjul & Tugu Bola Dunia',
+    tujuanLat: -6.8295,
+    tujuanLng: 108.2198,
+    penumpangNama: 'Edrick Andreas',
+    penumpangEmail: 'edrick@gmail.com',
+    penumpangNoHp: '081298765432',
+    jarakKm: 1.6,
+    durasiMenit: 8,
+    tarif: 9800,
+    diskon: 0,
+    totalBayar: 29800,
+    tip: 20000,
+    simulationProgress: 100,
+    routeGeometry: '[]',
+    driverId: 1,
+    dismissedByDriver: true,
+    dismissedByPassenger: true,
+    countedInStats: true,
+    countedTip: 20000,
+    createdAt: '2026-11-08T12:58:00.000Z',
+  });
+}
 if (!store.chatMessages) {
   store.chatMessages = new Map<number, SharedChatMessage[]>();
 }
@@ -950,9 +1080,10 @@ if (!store.fleetDrivers || store.fleetDrivers.length === 0) {
   store.fleetDrivers = INITIAL_FLEET_DRIVERS.map((d) => ({ ...d }));
 }
 if (!store.syncedHistoryIds) {
-  store.syncedHistoryIds = new Set<number>([990, 991, 1001]);
+  store.syncedHistoryIds = new Set<number>([990, 991, 1001, 1016]);
 }
 store.syncedHistoryIds.add(1001);
+store.syncedHistoryIds.add(1016);
 store.ratings = normalizeAndSortRatings(store.ratings);
 const maxExistingOrderId = Math.max(
   1000,
@@ -1545,26 +1676,36 @@ export const sharedStore = {
       const existingRatingIdx = store.ratings.findIndex(
         (r) => r.orderId === t.id || r.id === t.id
       );
+      const itemTs =
+        typeof t.timestamp === 'number' && t.timestamp > 0
+          ? t.timestamp
+          : parseRatingTimestamp({ createdAt: t.tanggal, orderId: t.id }, now);
+      const dynamicCreatedAt = formatDynamicReviewTime(itemTs, now);
+      const ratingItem: SharedRating = {
+        id: t.id,
+        orderId: t.id,
+        penumpangNama: passengerName,
+        driverNama: t.driverNama || 'Budi Santoso',
+        unit: t.driverUnit || 'BL-001',
+        skor: t.ratingScore || 5,
+        kategori: t.ratingCategory || 'Tepat Waktu & Hening',
+        komentar: t.ratingComment || 'Perjalanan nyaman dan bebas polusi.',
+        tip: t.tip || 0,
+        rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
+        createdAt: dynamicCreatedAt,
+        timestamp: itemTs,
+      };
+
       if (existingRatingIdx < 0) {
-        const itemTs =
-          typeof t.timestamp === 'number' && t.timestamp > 0
-            ? t.timestamp
-            : parseRatingTimestamp({ createdAt: t.tanggal, orderId: t.id }, now);
-        const dynamicCreatedAt = formatDynamicReviewTime(itemTs, now);
-        store.ratings.unshift({
-          id: t.id,
-          orderId: t.id,
-          penumpangNama: passengerName,
-          driverNama: t.driverNama || 'Budi Santoso',
-          unit: t.driverUnit || 'BL-001',
-          skor: t.ratingScore || 5,
-          kategori: t.ratingCategory || 'Tepat Waktu & Hening',
-          komentar: t.ratingComment || 'Perjalanan nyaman dan bebas polusi.',
-          tip: t.tip || 0,
-          rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
-          createdAt: dynamicCreatedAt,
-          timestamp: itemTs,
-        });
+        store.ratings.unshift(ratingItem);
+        changed = true;
+      } else {
+        store.ratings[existingRatingIdx] = {
+          ...store.ratings[existingRatingIdx],
+          ...ratingItem,
+          id: store.ratings[existingRatingIdx].id || t.id,
+          timestamp: store.ratings[existingRatingIdx].timestamp || itemTs,
+        };
         changed = true;
       }
 
@@ -1703,7 +1844,10 @@ export const sharedStore = {
     syncDriverOneToFleet();
     store.ratings = sortRatingsNewestFirst(store.ratings);
     const budiReviews = store.ratings.filter(
-      (r) => r.unit === 'BL-001' || r.driverNama.toLowerCase().includes('budi')
+      (r) =>
+        !r.unit ||
+        r.unit.toUpperCase() === 'BL-001' ||
+        (r.driverNama && r.driverNama.toLowerCase().includes('budi'))
     );
     return {
       rating: store.driverRating,
