@@ -21,6 +21,36 @@ export async function GET() {
   try {
     const session = await getSession();
 
+    // 0. Sinkronkan ulasan riil dari database PostgreSQL agar ulasan yang baru dikirim penumpang langsung tampil
+    try {
+      const dbRatings = await prisma.rating.findMany({
+        take: 30,
+        orderBy: { createdAt: "desc" },
+        include: {
+          order: {
+            include: {
+              penumpang: { select: { nama: true } },
+            },
+          },
+        },
+      });
+      if (dbRatings && dbRatings.length > 0) {
+        sharedStore.syncDbRatings(
+          dbRatings.map((dr) => ({
+            id: dr.id,
+            orderId: dr.orderId,
+            penumpangNama: dr.order?.penumpang?.nama || "Pelanggan BecakListrik",
+            skor: dr.skor,
+            kategori: dr.kategori || "Sangat Memuaskan",
+            komentar: dr.komentar || "Perjalanan hening dan nyaman.",
+            rute: dr.order ? `${dr.order.jemputAlamat} ➔ ${dr.order.tujuanAlamat}` : undefined,
+            createdAt: dr.createdAt.toISOString(),
+            timestamp: dr.createdAt.getTime(),
+          }))
+        );
+      }
+    } catch {}
+
     const ratingInfo = sharedStore.getDriverRating();
     const driverStats = sharedStore.getDriverStats();
     const rankedFleet = sharedStore.getFleetDrivers();
@@ -141,6 +171,62 @@ export async function POST(request: Request) {
 
     if (action === "SYNC_HISTORY" && Array.isArray(trips)) {
       sharedStore.syncPassengerHistory(trips);
+
+      // Sinkronkan ulasan ke PostgreSQL database di latar belakang
+      void (async () => {
+        try {
+          const pangkalan = await prisma.pangkalan.findFirst().catch(() => null);
+          const passengerUser =
+            (await prisma.user.findFirst({ where: { role: "PENUMPANG" } }).catch(() => null)) ||
+            (await prisma.user.findFirst().catch(() => null));
+
+          for (const t of trips) {
+            if (!t || !t.id || t.id === 990 || t.id === 991 || t.id === 1001) continue;
+            if (!t.ratingScore) continue;
+
+            const existingOrder = await prisma.order.findUnique({ where: { id: t.id } }).catch(() => null);
+            if (!existingOrder && pangkalan && passengerUser) {
+              await prisma.order.create({
+                data: {
+                  id: t.id,
+                  kode: t.kode || `ORD-${t.id}`,
+                  pangkalanId: pangkalan.id,
+                  penumpangId: passengerUser.id,
+                  jemputAlamat: t.jemputAlamat || "Titik Jemput Majalengka",
+                  jemputLat: -6.8362,
+                  jemputLng: 108.2281,
+                  tujuanAlamat: t.tujuanAlamat || "Titik Tujuan Majalengka",
+                  tujuanLat: -6.8400,
+                  tujuanLng: 108.2250,
+                  jarakKm: t.jarakKm || 2,
+                  durasiMenit: t.durasiMenit || 8,
+                  tarif: t.tarif || 10000,
+                  diskon: t.diskon || 0,
+                  totalBayar: t.totalBayar || 10000,
+                  status: "SELESAI",
+                  simulationProgress: 100,
+                },
+              }).catch(() => null);
+            }
+
+            await prisma.rating.upsert({
+              where: { orderId: t.id },
+              create: {
+                orderId: t.id,
+                skor: t.ratingScore || 5,
+                kategori: t.ratingCategory || "Sangat Memuaskan",
+                komentar: t.ratingComment || "Perjalanan hening dan nyaman.",
+              },
+              update: {
+                skor: t.ratingScore || 5,
+                kategori: t.ratingCategory || "Sangat Memuaskan",
+                komentar: t.ratingComment || "Perjalanan hening dan nyaman.",
+              },
+            }).catch(() => null);
+          }
+        } catch {}
+      })();
+
       const ratingInfo = sharedStore.getDriverRating();
       const driverStats = sharedStore.getDriverStats();
       return NextResponse.json({

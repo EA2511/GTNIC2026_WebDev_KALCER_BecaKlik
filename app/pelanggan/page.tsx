@@ -1249,6 +1249,19 @@ function PelangganContent() {
       if (typeof window !== "undefined") {
         localStorage.setItem("becak_active_order_id", String(orderResult.id));
         localStorage.setItem("becak_active_order_data", JSON.stringify(orderResult));
+        // Bersihkan seluruh riwayat chat pesanan sebelumnya agar pesanan baru 100% bersih
+        try {
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith("becaklik_chat_")) {
+              keysToRemove.push(k);
+            }
+          }
+          for (const k of keysToRemove) {
+            localStorage.removeItem(k);
+          }
+        } catch {}
       }
       try {
         const bc = new BroadcastChannel("becaklik_order_sync");
@@ -1852,6 +1865,26 @@ function PelangganContent() {
     });
 
     setIsSubmittingRating(false);
+
+    // 1. Sinkronisasi instan via BroadcastChannel ke tab Driver yang sedang terbuka
+    try {
+      const bc = new BroadcastChannel("becaklik_rating_sync");
+      bc.postMessage({
+        type: "NEW_RATING",
+        trip: newTrip,
+      });
+      bc.close();
+    } catch {}
+
+    // 2. Sinkronisasi langsung ke driver active backend agar memori dan database terisi ulasan
+    void fetch("/api/driver/active", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "SYNC_HISTORY",
+        trips: [newTrip],
+      }),
+    }).catch(() => {});
 
     try {
       await fetch(`/api/orders/${activeOrder.id}`, {
@@ -5983,6 +6016,7 @@ function PelangganContent() {
                       <TripChat
                         key={`passenger_chat_${activeOrder.id}`}
                         orderId={activeOrder.id}
+                        orderCode={activeOrder.kode}
                         currentUserRole="PENUMPANG"
                         currentUserName={activeOrder.penumpangNama || guestName}
                         currentUserId={1}

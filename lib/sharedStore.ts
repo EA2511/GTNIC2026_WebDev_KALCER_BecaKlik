@@ -828,7 +828,7 @@ if (!globalForStore.__shared_store__) {
     driverTotalTrips: cached?.driverTotalTrips ?? SNAPSHOT_DRIVER_STATS.driverTotalTrips ?? 63,
     driverCompletedToday: cached?.driverCompletedToday ?? SNAPSHOT_DRIVER_STATS.driverCompletedToday ?? 21,
     driverEarningsToday: cached?.driverEarningsToday ?? SNAPSHOT_DRIVER_STATS.driverEarningsToday ?? 425738,
-    nextOrderId: cached?.nextOrderId ?? SNAPSHOT_DRIVER_STATS.nextOrderId ?? 1016,
+    nextOrderId: cached?.nextOrderId ?? Math.max(1020, (Math.floor(Date.now() / 1000) % 900000) + 100000),
     nextUserId: 110,
     nextChatId: 500,
   };
@@ -973,7 +973,11 @@ export const sharedStore = {
       tujuanAlamat: string;
     }
   ): SharedOrder {
-    const id = data.id && Number.isInteger(data.id) ? data.id : store.nextOrderId++;
+    const uniqueFallbackId = (Math.floor(Date.now() / 1000) % 900000) + 100000;
+    const id = data.id && Number.isInteger(data.id) ? data.id : Math.max(store.nextOrderId++, uniqueFallbackId);
+    store.nextOrderId = id + 1;
+    store.chatMessages.set(id, []);
+
     for (const old of store.orders.values()) {
       if (old.status === 'SELESAI' || old.status === 'DIBATALKAN') {
         old.dismissedByDriver = true;
@@ -1533,6 +1537,51 @@ export const sharedStore = {
       }
     }
 
+    if (changed) {
+      store.ratings = sortRatingsNewestFirst(store.ratings);
+      syncDriverOneToFleet();
+      savePersistedCache(store);
+    }
+  },
+
+  // Sinkronkan ulasan dari database PostgreSQL ke memori sharedStore
+  syncDbRatings(
+    dbRatings: Array<{
+      id: number;
+      orderId: number;
+      penumpangNama: string;
+      skor: number;
+      kategori: string;
+      komentar: string;
+      tip?: number;
+      rute?: string;
+      createdAt: string;
+      timestamp: number;
+    }>
+  ): void {
+    if (!Array.isArray(dbRatings) || dbRatings.length === 0) return;
+    let changed = false;
+    const now = Date.now();
+    for (const dr of dbRatings) {
+      const exists = store.ratings.some((r) => r.orderId === dr.orderId || r.id === dr.id);
+      if (!exists) {
+        store.ratings.unshift({
+          id: dr.id,
+          orderId: dr.orderId,
+          penumpangNama: dr.penumpangNama || 'Pelanggan BecakListrik',
+          driverNama: 'Budi Santoso',
+          unit: 'BL-001',
+          skor: dr.skor || 5,
+          kategori: dr.kategori || 'Sangat Memuaskan',
+          komentar: dr.komentar || 'Perjalanan hening dan nyaman.',
+          tip: dr.tip || 0,
+          rute: dr.rute,
+          createdAt: formatDynamicReviewTime(dr.timestamp, now),
+          timestamp: dr.timestamp,
+        });
+        changed = true;
+      }
+    }
     if (changed) {
       store.ratings = sortRatingsNewestFirst(store.ratings);
       syncDriverOneToFleet();

@@ -14,6 +14,7 @@ interface ChatMessage {
 
 interface TripChatProps {
   orderId: number;
+  orderCode?: string;
   currentUserRole: 'PENUMPANG' | 'DRIVER';
   currentUserName: string;
   currentUserId?: number;
@@ -35,6 +36,7 @@ const quickMessagesDriver = [
 
 export default function TripChat({
   orderId,
+  orderCode,
   currentUserRole,
   currentUserName,
   currentUserId,
@@ -344,7 +346,7 @@ export default function TripChat({
                 textOverflow: 'ellipsis',
               }}
             >
-              Pesanan #{orderId} · Terenkripsi
+              Pesanan {orderCode || `#${orderId}`} · Terenkripsi
             </span>
           </div>
         </div>

@@ -210,6 +210,20 @@ function formatReviewDynamicTime(rev: ReviewInfo, now: number = Date.now()): str
   return `${rDate} ${months[rMonth]} ${rYear}, ${timeStr}`;
 }
 
+function mergeReviews(prev: ReviewInfo[], incoming: ReviewInfo[]): ReviewInfo[] {
+  if (!Array.isArray(incoming) || incoming.length === 0) return prev;
+  const map = new Map<number | string, ReviewInfo>();
+  for (const r of incoming) {
+    if (r && r.id != null) map.set(r.id, r);
+  }
+  for (const r of prev) {
+    if (r && r.id != null && !map.has(r.id)) {
+      map.set(r.id, r);
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+}
+
 export default function DriverPage() {
   const router = useRouter();
   const [driver, setDriver] = useState<DriverData | null>({
@@ -243,24 +257,65 @@ export default function DriverPage() {
     }
   }, []);
 
-  // Sinkronkan riwayat perjalanan dari localStorage browser penumpang agar pesanan kemarin langsung muncul
+  // Sinkronkan riwayat perjalanan & ulasan real-time dari browser penumpang ke Driver
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const syncTripsToState = (parsed: any[]) => {
+      if (!Array.isArray(parsed) || parsed.length === 0) return;
+      const formattedReviews: ReviewInfo[] = parsed.map((t) => ({
+        id: t.id,
+        penumpangNama: t.penumpangNama || "Penumpang",
+        skor: t.ratingScore || 5,
+        kategori: t.ratingCategory || "Sangat Memuaskan",
+        komentar: t.ratingComment || "Perjalanan nyaman dan hening.",
+        tip: t.tip || 0,
+        rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
+        createdAt: "Baru saja",
+      }));
+      setReviews((prev) => mergeReviews(prev, formattedReviews));
+      void fetch("/api/driver/active", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "SYNC_HISTORY", trips: parsed }),
+      }).catch(() => {});
+    };
+
     try {
       const savedHistory = localStorage.getItem("becak_passenger_trip_history");
       if (savedHistory) {
         const parsed = JSON.parse(savedHistory);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          void fetch("/api/driver/active", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "SYNC_HISTORY", trips: parsed }),
-          }).catch(() => {});
-        }
+        syncTripsToState(parsed);
       }
-    } catch {
-      // ignore parse error
-    }
+    } catch {}
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("becaklik_rating_sync");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "NEW_RATING" && event.data.trip) {
+          syncTripsToState([event.data.trip]);
+          setAcceptNotification(
+            `⭐ Ulasan baru masuk (${event.data.trip.ratingScore || 5}★) dari ${event.data.trip.penumpangNama || "Penumpang"}!`
+          );
+        }
+      };
+    } catch {}
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "becak_passenger_trip_history" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          syncTripsToState(parsed);
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   const [activeOrder, setActiveOrder] = useState<OrderInfo | null>(() => {
@@ -297,84 +352,108 @@ export default function DriverPage() {
     }
   }, [activeOrder]);
   const [incomingOrders, setIncomingOrders] = useState<OrderInfo[]>([]);
-  const [reviews, setReviews] = useState<ReviewInfo[]>([
-    {
-      id: 1001,
-      penumpangNama: "Edrick Andreas",
-      skor: 5,
-      kategori: "Rute Cepat & Aman",
-      komentar: "makasihh pakkkkkk",
-      tip: 20000,
-      rute: "Universitas Majalengka (Kampus UNMA) ➔ RSUD Cideres Majalengka",
-      createdAt: "Kemarin, 16:37",
-    },
-    {
-      id: 991,
-      penumpangNama: "Rina Kusuma",
-      skor: 5,
-      kategori: "Tepat Waktu & Hening",
-      komentar:
-        "Becaknya bersih dan tidak bising. Sangat nyaman untuk keliling kota!",
-      tip: 2000,
-      rute: "Alun-Alun Majalengka ➔ Pasar Mambo Sentra Kuliner",
-      createdAt: "5 hari lalu, 14:20",
-    },
-    {
-      id: 990,
-      penumpangNama: "Rina Kusuma",
-      skor: 5,
-      kategori: "Driver Ramah",
-      komentar:
-        "Pak Budi ramah sekali, menjelaskan sejarah Majalengka di jalan.",
-      tip: 5000,
-      rute: "Bunderan Munjul ➔ Gedung Juang Majalengka",
-      createdAt: "6 hari lalu, 09:45",
-    },
-    {
-      id: 989,
-      penumpangNama: "Ahmad Fauzi",
-      skor: 5,
-      kategori: "Tepat Waktu & Hening",
-      komentar:
-        "Becak listriknya sangat nyaman dan bersih, tidak bising sama sekali saat menuju kampus!",
-      tip: 3000,
-      rute: "Jl. Siti Armilah ➔ Universitas Majalengka (UNMA)",
-      createdAt: "1 Nov 2026, 15:35",
-    },
-    {
-      id: 988,
-      penumpangNama: "Hj. Siti Rahmawati",
-      skor: 5,
-      kategori: "Driver Ramah & Sabar",
-      komentar:
-        "Pak Budi sangat membantu membawakan belanjaan pasar saya sampai depan teras rumah.",
-      tip: 5000,
-      rute: "Pasar Sindangkasih Cigasong ➔ Perum Wijaya Kusuma Cijati",
-      createdAt: "1 jam lalu",
-    },
-    {
-      id: 987,
-      penumpangNama: "Dr. Hendra Pratama",
-      skor: 5,
-      kategori: "Kabin Bersih & Nyaman",
-      komentar:
-        "Suspensi empuk dan bebas asap knalpot, sangat cocok untuk pasien lansia ke RSUD.",
-      tip: 5000,
-      rute: "Pemukiman Babakan Jawa ➔ RSUD Majalengka",
-      createdAt: "2 jam lalu",
-    },
-    {
-      id: 986,
-      penumpangNama: "Neng Dinda Permata",
-      skor: 5,
-      kategori: "Tarif Jujur & Transparan",
-      komentar:
-        "Bayar pakai QRIS praktis banget, tarifnya pas sesuai aplikasi tanpa tawar-menawar.",
-      tip: 2000,
-      rute: "SMAN 1 Majalengka ➔ Surya Toserba Majalengka",
-      createdAt: "3 jam lalu",
-    },
-  ]);
+  const [reviews, setReviews] = useState<ReviewInfo[]>(() => {
+    const defaultList: ReviewInfo[] = [
+      {
+        id: 1001,
+        penumpangNama: "Edrick Andreas",
+        skor: 5,
+        kategori: "Rute Cepat & Aman",
+        komentar: "makasihh pakkkkkk",
+        tip: 20000,
+        rute: "Universitas Majalengka (Kampus UNMA) ➔ RSUD Cideres Majalengka",
+        createdAt: "Kemarin, 16:37",
+      },
+      {
+        id: 991,
+        penumpangNama: "Rina Kusuma",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar:
+          "Becaknya bersih dan tidak bising. Sangat nyaman untuk keliling kota!",
+        tip: 2000,
+        rute: "Alun-Alun Majalengka ➔ Pasar Mambo Sentra Kuliner",
+        createdAt: "5 hari lalu, 14:20",
+      },
+      {
+        id: 990,
+        penumpangNama: "Rina Kusuma",
+        skor: 5,
+        kategori: "Driver Ramah",
+        komentar:
+          "Pak Budi ramah sekali, menjelaskan sejarah Majalengka di jalan.",
+        tip: 5000,
+        rute: "Bunderan Munjul ➔ Gedung Juang Majalengka",
+        createdAt: "6 hari lalu, 09:45",
+      },
+      {
+        id: 989,
+        penumpangNama: "Ahmad Fauzi",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar:
+          "Becak listriknya sangat nyaman dan bersih, tidak bising sama sekali saat menuju kampus!",
+        tip: 3000,
+        rute: "Jl. Siti Armilah ➔ Universitas Majalengka (UNMA)",
+        createdAt: "1 Nov 2026, 15:35",
+      },
+      {
+        id: 988,
+        penumpangNama: "Hj. Siti Rahmawati",
+        skor: 5,
+        kategori: "Driver Ramah & Sabar",
+        komentar:
+          "Pak Budi sangat membantu membawakan belanjaan pasar saya sampai depan teras rumah.",
+        tip: 5000,
+        rute: "Pasar Sindangkasih Cigasong ➔ Perum Wijaya Kusuma Cijati",
+        createdAt: "1 jam lalu",
+      },
+      {
+        id: 987,
+        penumpangNama: "Dr. Hendra Pratama",
+        skor: 5,
+        kategori: "Kabin Bersih & Nyaman",
+        komentar:
+          "Suspensi empuk dan bebas asap knalpot, sangat cocok untuk pasien lansia ke RSUD.",
+        tip: 5000,
+        rute: "Pemukiman Babakan Jawa ➔ RSUD Majalengka",
+        createdAt: "2 jam lalu",
+      },
+      {
+        id: 986,
+        penumpangNama: "Neng Dinda Permata",
+        skor: 5,
+        kategori: "Tarif Jujur & Transparan",
+        komentar:
+          "Bayar pakai QRIS praktis banget, tarifnya pas sesuai aplikasi tanpa tawar-menawar.",
+        tip: 2000,
+        rute: "SMAN 1 Majalengka ➔ Surya Toserba Majalengka",
+        createdAt: "3 jam lalu",
+      },
+    ];
+
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("becak_driver_reviews");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return mergeReviews(defaultList, parsed);
+          }
+        }
+      } catch {}
+    }
+    return defaultList;
+  });
+
+  // Simpan ulasan Driver secara lokal agar tidak pernah hilang saat refresh atau restart
+  useEffect(() => {
+    if (typeof window !== "undefined" && reviews.length > 0) {
+      try {
+        localStorage.setItem("becak_driver_reviews", JSON.stringify(reviews));
+      } catch {}
+    }
+  }, [reviews]);
   const [stats, setStats] = useState({
     completedToday: 6,
     earningsToday: 78000,
@@ -446,7 +525,7 @@ export default function DriverPage() {
         setIncomingOrders(filteredInc);
         if (data.stats) setStats(data.stats);
         if (data.recentReviews && data.recentReviews.length > 0) {
-          setReviews(data.recentReviews);
+          setReviews((prev) => mergeReviews(prev, data.recentReviews));
         }
       }
     } catch (e) {
@@ -600,7 +679,7 @@ export default function DriverPage() {
             });
           }
           if (data.recentReviews && data.recentReviews.length > 0) {
-            setReviews(data.recentReviews);
+            setReviews((prev) => mergeReviews(prev, data.recentReviews));
           }
         }
       } catch (e) {
@@ -2013,6 +2092,7 @@ export default function DriverPage() {
                     <TripChat
                       key={`driver_chat_${activeOrder.id}`}
                       orderId={activeOrder.id}
+                      orderCode={activeOrder.kode}
                       currentUserRole="DRIVER"
                       currentUserName={`${driverDisplayName} (Driver ${driver?.unit || "BL-001"})`}
                       currentUserId={driver?.id || 2}
