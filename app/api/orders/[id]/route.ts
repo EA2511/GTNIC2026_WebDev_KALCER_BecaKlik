@@ -120,13 +120,19 @@ export async function PATCH(
     if (action === "RATE") {
       const tipAmount = typeof tip === "number" && tip >= 0 ? tip : 0;
       const ratingTs = Number(body.timestamp) || Date.now();
+      const passengerName =
+        (body.penumpangNama && String(body.penumpangNama).trim()) ||
+        sharedStore.getOrder(orderId)?.penumpangNama ||
+        "Edrick";
+
       const rating = sharedStore.submitRating(
         orderId,
         Math.min(5, Math.max(1, Number(skor) || 5)),
         kategori ? String(kategori).slice(0, 100) : "Sangat Memuaskan",
         komentar ? String(komentar).slice(0, 255) : "Perjalanan nyaman dan hening.",
         tipAmount,
-        ratingTs
+        ratingTs,
+        passengerName
       );
 
       try {

@@ -189,7 +189,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1016,
     orderId: 1016,
-    penumpangNama: 'Edrick Andreas',
+    penumpangNama: 'Edrick',
     driverNama: 'Budi Santoso',
     unit: 'BL-001',
     skor: 5,
@@ -353,6 +353,34 @@ const INITIAL_RATINGS: SharedRating[] = [
     rute: 'Universitas Majalengka (Kampus UNMA) ➔ RSUD Cideres Majalengka',
     createdAt: 'Kemarin, 16:37',
     timestamp: Date.UTC(2026, 10, 7, 9, 37, 0),
+  },
+  {
+    id: 1013,
+    orderId: 1013,
+    penumpangNama: 'Edrick',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Perjalanan siang sangat nyaman, adem dan pak sopir ramah sekali!',
+    tip: 10000,
+    rute: 'Universitas Majalengka (Kampus UNMA) ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam',
+    createdAt: 'Kemarin, 13:10',
+    timestamp: 1794031800000,
+  },
+  {
+    id: 1012,
+    orderId: 1012,
+    penumpangNama: 'Edrick',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Rute Cepat & Aman',
+    komentar: 'Becak listrik terbaik di Majalengka, cepat dan bebas polusi!',
+    tip: 15000,
+    rute: 'Pasar Mambo Kuliner Majalengka ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Kemarin, 12:30',
+    timestamp: 1794029400000,
   },
   {
     id: 991,
@@ -1590,10 +1618,14 @@ export const sharedStore = {
     kategori: string,
     komentar: string,
     tip?: number,
-    timestamp?: number
+    timestamp?: number,
+    customPassengerName?: string
   ): SharedRating {
     const order = store.orders.get(orderId) || this.getActiveOrder();
-    const penumpangNama = order?.penumpangNama || 'Rina Kusuma';
+    const finalPassengerNama =
+      (customPassengerName && customPassengerName.trim()) ||
+      (order?.penumpangNama && order.penumpangNama.trim()) ||
+      'Edrick';
     const cleanTip = typeof tip === 'number' && tip >= 0 ? tip : 0;
     const now = typeof timestamp === 'number' && timestamp > 0 ? timestamp : Date.now();
 
@@ -1606,6 +1638,7 @@ export const sharedStore = {
       order.totalBayar = Math.max(0, baseTotal + cleanTip);
       order.status = 'SELESAI';
       order.simulationProgress = 100;
+      order.penumpangNama = finalPassengerNama;
       if (!order.countedInStats) {
         order.countedInStats = true;
         store.driverTotalTrips += 1;
@@ -1624,7 +1657,7 @@ export const sharedStore = {
     const rating: SharedRating = {
       id: existingIdx >= 0 ? store.ratings[existingIdx].id : now,
       orderId,
-      penumpangNama,
+      penumpangNama: finalPassengerNama,
       driverNama: 'Budi Santoso',
       unit: 'BL-001',
       skor,
@@ -1661,13 +1694,26 @@ export const sharedStore = {
 
     for (const t of trips) {
       if (!t || !t.id) continue;
-      // Abaikan 3 item seed default (990, 991, 1001) karena sudah ada di INITIAL_RATINGS dengan urutan waktu yang rapi
-      if (t.id === 990 || t.id === 991 || t.id === 1001) continue;
+      // Abaikan seed default yang sudah ada di INITIAL_RATINGS dengan urutan waktu yang rapi
+      if (t.id === 990 || t.id === 991 || t.id === 1001 || t.id === 1012 || t.id === 1013) continue;
+
+      const defaultTripNames: Record<number, string> = {
+        1016: 'Edrick',
+        1015: 'Rina Kusuma',
+        1014: 'Rina Kusuma',
+        1013: 'Edrick',
+        1012: 'Edrick',
+        1011: 'Wowo',
+        1010: 'Khalil',
+        1009: 'Edrick Andreas',
+        1001: 'Edrick Andreas',
+      };
 
       const passengerName =
-        t.penumpangNama ||
+        (t.penumpangNama && t.penumpangNama.trim()) ||
+        defaultTripNames[t.id] ||
         store.orders.get(t.id)?.penumpangNama ||
-        'Edrick Andreas';
+        'Edrick';
       const passengerEmail =
         t.penumpangEmail ||
         store.orders.get(t.id)?.penumpangEmail ||
@@ -1700,11 +1746,18 @@ export const sharedStore = {
         store.ratings.unshift(ratingItem);
         changed = true;
       } else {
+        const existingRev = store.ratings[existingRatingIdx];
+        const keepName =
+          t.penumpangNama && t.penumpangNama.trim() && t.penumpangNama !== 'Pelanggan BecakListrik'
+            ? t.penumpangNama
+            : existingRev.penumpangNama || passengerName;
+
         store.ratings[existingRatingIdx] = {
-          ...store.ratings[existingRatingIdx],
+          ...existingRev,
           ...ratingItem,
-          id: store.ratings[existingRatingIdx].id || t.id,
-          timestamp: store.ratings[existingRatingIdx].timestamp || itemTs,
+          penumpangNama: keepName,
+          id: existingRev.id || t.id,
+          timestamp: existingRev.timestamp || itemTs,
         };
         changed = true;
       }
@@ -1779,7 +1832,10 @@ export const sharedStore = {
         store.ratings.unshift({
           id: dr.id,
           orderId: dr.orderId,
-          penumpangNama: dr.penumpangNama || 'Pelanggan BecakListrik',
+          penumpangNama:
+            store.orders.get(dr.orderId)?.penumpangNama ||
+            dr.penumpangNama ||
+            'Pelanggan BecakListrik',
           driverNama: 'Budi Santoso',
           unit: 'BL-001',
           skor: dr.skor || 5,
@@ -1852,8 +1908,8 @@ export const sharedStore = {
     return {
       rating: store.driverRating,
       trips: store.driverTotalTrips,
-      reviews: budiReviews.slice(0, 30),
-      allReviews: store.ratings.slice(0, 40),
+      reviews: budiReviews,
+      allReviews: store.ratings,
     };
   },
 
@@ -2053,7 +2109,7 @@ export const sharedStore = {
         heading: d.heading,
       })),
       liveOrders: allLiveOrders.slice(0, 12),
-      recentReviews: store.ratings.slice(0, 20),
+      recentReviews: store.ratings,
       rankedDrivers,
       pangkalan: {
         id: 1,

@@ -39,7 +39,10 @@ export async function GET() {
           dbRatings.map((dr) => ({
             id: dr.id,
             orderId: dr.orderId,
-            penumpangNama: dr.order?.penumpang?.nama || "Pelanggan BecakListrik",
+            penumpangNama:
+              sharedStore.getOrder(dr.orderId)?.penumpangNama ||
+              dr.order?.penumpang?.nama ||
+              "Pelanggan BecakListrik",
             skor: dr.skor,
             kategori: dr.kategori || "Sangat Memuaskan",
             komentar: dr.komentar || "Perjalanan hening dan nyaman.",

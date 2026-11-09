@@ -182,6 +182,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Edrick",
     ratingScore: 5,
     ratingCategory: "Rute Cepat & Aman",
     ratingComment: "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
@@ -202,6 +203,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Rina Kusuma",
     ratingScore: 5,
     ratingCategory: "Tepat Waktu & Hening",
     ratingComment: "Perjalanan nyaman dan hening.",
@@ -222,9 +224,52 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "CASH",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Rina Kusuma",
     ratingScore: 5,
     ratingCategory: "Tepat Waktu & Hening",
     ratingComment: "Perjalanan nyaman dan hening.",
+  },
+  {
+    id: 1013,
+    kode: "ORD-20261108-SIM193",
+    tanggal: "Kemarin, 13:10",
+    timestamp: 1794031800000,
+    jemputAlamat: "Universitas Majalengka (Kampus UNMA)",
+    tujuanAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    jarakKm: 2.8,
+    durasiMenit: 11,
+    tarif: 13500,
+    diskon: 3500,
+    tip: 10000,
+    totalBayar: 20000,
+    metode: "QRIS",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    penumpangNama: "Edrick",
+    ratingScore: 5,
+    ratingCategory: "Tepat Waktu & Hening",
+    ratingComment: "Perjalanan siang sangat nyaman, adem dan pak sopir ramah sekali!",
+  },
+  {
+    id: 1012,
+    kode: "ORD-20261108-SIM704",
+    tanggal: "Kemarin, 12:30",
+    timestamp: 1794029400000,
+    jemputAlamat: "Pasar Mambo Kuliner Majalengka",
+    tujuanAlamat: "Bunderan Munjul & Tugu Bola Dunia",
+    jarakKm: 2.2,
+    durasiMenit: 9,
+    tarif: 11500,
+    diskon: 1500,
+    tip: 15000,
+    totalBayar: 25000,
+    metode: "QRIS",
+    driverNama: "Budi Santoso",
+    driverUnit: "BL-001",
+    penumpangNama: "Edrick",
+    ratingScore: 5,
+    ratingCategory: "Rute Cepat & Aman",
+    ratingComment: "Becak listrik terbaik di Majalengka, cepat dan bebas polusi!",
   },
   {
     id: 1011,
@@ -242,6 +287,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Wowo",
     ratingScore: 5,
     ratingCategory: "Driver Ramah & Sopan",
     ratingComment: "MBG",
@@ -262,6 +308,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Khalil",
     ratingScore: 5,
     ratingCategory: "Tepat Waktu & Hening",
     ratingComment: "Mas nya baik hati",
@@ -282,6 +329,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Edrick Andreas",
     ratingScore: 5,
     ratingCategory: "Rute Cepat & Aman",
     ratingComment: "Perjalanan nyaman dan hening.",
@@ -302,6 +350,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Edrick Andreas",
     ratingScore: 5,
     ratingCategory: "Rute Cepat & Aman",
     ratingComment: "makasihh pakkkkkk",
@@ -322,6 +371,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Rina Kusuma",
     ratingScore: 5,
     ratingCategory: "Tepat Waktu & Hening",
     ratingComment:
@@ -343,6 +393,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
+    penumpangNama: "Rina Kusuma",
     ratingScore: 5,
     ratingCategory: "Driver Ramah",
     ratingComment:
@@ -757,6 +808,21 @@ function PelangganContent() {
     }
     return "rina@becak.test";
   });
+  const handleGuestNameChange = (val: string) => {
+    setGuestName(val);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          "becak_custom_passenger",
+          JSON.stringify({
+            nama: val,
+            email: guestEmail,
+            isUserEdited: true,
+          })
+        );
+      } catch {}
+    }
+  };
   const [tripNotes, setTripNotes] = useState("Tunggu di dekat gapura");
   const [passengerCount, setPassengerCount] = useState<1 | 2>(1);
   const [serviceType, setServiceType] = useState<
@@ -939,7 +1005,15 @@ function PelangganContent() {
               action: "SYNC_HISTORY",
               trips: list.map((t) => ({
                 ...t,
-                penumpangNama: t.penumpangNama || (t.id === 1001 ? "Edrick Andreas" : guestName),
+                penumpangNama:
+                  t.penumpangNama ||
+                  (t.id === 1016 || t.id === 1013 || t.id === 1012 || t.id === 1009 || t.id === 1001
+                    ? "Edrick"
+                    : t.id === 1011
+                    ? "Wowo"
+                    : t.id === 1010
+                    ? "Khalil"
+                    : "Rina Kusuma"),
               })),
             }),
           }).catch(() => {});
@@ -949,7 +1023,7 @@ function PelangganContent() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [guestName]);
+  }, []);
 
   // Trigger Toast Helper (Safe against overlapping timeouts)
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1022,16 +1096,28 @@ function PelangganContent() {
       .then((meData) => {
         if (!active) return;
         if (meData?.user?.nama) {
-          setGuestName(meData.user.nama);
+          let savedCustom: { nama?: string; email?: string; isUserEdited?: boolean } | null = null;
+          if (typeof window !== "undefined") {
+            try {
+              const raw = localStorage.getItem("becak_custom_passenger");
+              if (raw) savedCustom = JSON.parse(raw);
+            } catch {}
+          }
+          if (savedCustom?.isUserEdited && savedCustom?.nama && savedCustom.nama.trim()) {
+            setGuestName(savedCustom.nama.trim());
+          } else {
+            setGuestName(meData.user.nama);
+          }
           if (meData.user.email) setGuestEmail(meData.user.email);
           if (typeof window !== "undefined") {
             try {
               localStorage.setItem(
                 "becak_custom_passenger",
                 JSON.stringify({
-                  nama: meData.user.nama,
+                  nama: savedCustom?.isUserEdited && savedCustom?.nama ? savedCustom.nama.trim() : meData.user.nama,
                   email: meData.user.email || (meData.user.nama === "Edrick Andreas" ? "edrick@gmail.com" : "rina@becak.test"),
                   noHp: meData.user.noHp || "",
+                  isUserEdited: !!savedCustom?.isUserEdited,
                 })
               );
             } catch {}
@@ -1954,12 +2040,18 @@ function PelangganContent() {
     );
 
     const submitTs = Date.now();
+    const finalPassengerName =
+      (activeOrder.penumpangNama && activeOrder.penumpangNama.trim()) ||
+      (guestName && guestName.trim()) ||
+      "Edrick";
+
     // Add to Riwayat Perjalanan (Trip History) immediately
     const newTrip: CompletedTrip = {
       id: activeOrder.id,
       kode: activeOrder.kode,
       tanggal: "Hari ini, " + new Date(submitTs).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
       timestamp: submitTs,
+      penumpangNama: finalPassengerName,
       jemputAlamat: activeOrder.jemputAlamat,
       tujuanAlamat: activeOrder.tujuanAlamat,
       jarakKm: activeOrder.jarakKm,
@@ -2025,6 +2117,7 @@ function PelangganContent() {
           komentar: ratingComment,
           tip: cleanTip,
           timestamp: submitTs,
+          penumpangNama: finalPassengerName,
         }),
       });
     } catch (e) {
@@ -2651,7 +2744,7 @@ function PelangganContent() {
                           <input
                             id="guestName"
                             value={guestName}
-                            onChange={(e) => setGuestName(e.target.value)}
+                            onChange={(e) => handleGuestNameChange(e.target.value)}
                             placeholder="Ketik nama penumpang..."
                             required
                             style={{

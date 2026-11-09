@@ -253,7 +253,12 @@ function mergeReviews(prev: ReviewInfo[], incoming: ReviewInfo[]): ReviewInfo[] 
   for (const r of prev) {
     if (r && (r.id != null || r.orderId != null)) {
       const key = getDedupeKey(r);
-      if (!map.has(key)) {
+      const existing = map.get(key);
+      if (existing) {
+        if (!existing.penumpangNama || existing.penumpangNama === "Pelanggan BecakListrik") {
+          existing.penumpangNama = r.penumpangNama || existing.penumpangNama;
+        }
+      } else {
         const ts = getReviewTimestamp(r);
         map.set(key, {
           ...r,
@@ -407,7 +412,7 @@ export default function DriverPage() {
       {
         id: 1016,
         orderId: 1016,
-        penumpangNama: "Edrick Andreas",
+        penumpangNama: "Edrick",
         skor: 5,
         kategori: "Rute Cepat & Aman",
         komentar: "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
@@ -511,6 +516,30 @@ export default function DriverPage() {
         rute: "Universitas Majalengka (Kampus UNMA) ➔ RSUD Cideres Majalengka",
         createdAt: "Kemarin, 16:37",
         timestamp: 1794044220000,
+      },
+      {
+        id: 1013,
+        orderId: 1013,
+        penumpangNama: "Edrick",
+        skor: 5,
+        kategori: "Tepat Waktu & Hening",
+        komentar: "Perjalanan siang sangat nyaman, adem dan pak sopir ramah sekali!",
+        tip: 10000,
+        rute: "Universitas Majalengka (Kampus UNMA) ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam",
+        createdAt: "Kemarin, 13:10",
+        timestamp: 1794031800000,
+      },
+      {
+        id: 1012,
+        orderId: 1012,
+        penumpangNama: "Edrick",
+        skor: 5,
+        kategori: "Rute Cepat & Aman",
+        komentar: "Becak listrik terbaik di Majalengka, cepat dan bebas polusi!",
+        tip: 15000,
+        rute: "Pasar Mambo Kuliner Majalengka ➔ Bunderan Munjul & Tugu Bola Dunia",
+        createdAt: "Kemarin, 12:30",
+        timestamp: 1794029400000,
       },
       {
         id: 991,

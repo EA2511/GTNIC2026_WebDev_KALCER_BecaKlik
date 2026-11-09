@@ -211,6 +211,7 @@ export default function AdminPage() {
             return (
               inc &&
               (inc.orderId || inc.id) === (p.orderId || p.id) &&
+              inc.penumpangNama === p.penumpangNama &&
               inc.skor === p.skor &&
               inc.tip === p.tip &&
               inc.createdAt === p.createdAt
@@ -271,6 +272,7 @@ export default function AdminPage() {
               return (
                 inc &&
                 (inc.orderId || inc.id) === (p.orderId || p.id) &&
+                inc.penumpangNama === p.penumpangNama &&
                 inc.skor === p.skor &&
                 inc.tip === p.tip &&
                 inc.createdAt === p.createdAt
