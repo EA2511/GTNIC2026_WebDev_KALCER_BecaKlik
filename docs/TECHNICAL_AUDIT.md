@@ -70,7 +70,7 @@ Audit teknis ini dilakukan terhadap codebase **BecaKlik Majalengka** yang dituju
 
 1. **Pemesanan (Customer Flow)**:
    - *Aktual*: Form hanya memiliki 2 text input alamat statis dan radio pilihan layanan Reguler/Prioritas. Tombol "Konfirmasi" hanya mengubah state React lokal tanpa memanggil endpoint backend.
-   - *Rekomendasi*: Integrasikan dengan peta interaktif Leaflet. Sediakan pilihan titik POI demo (Alun-Alun, Stasiun, Malioboro/Pasar, Kampus, dsb.) atau klik langsung pada peta. Kirim payload ke endpoint API `/api/orders` yang mencatat koordinat lat/lng, estimasi jarak rute jalan, perhitungan tarif transparan di backend, dan kode booking otomatis `ORD-YYYYMMDD-XXX`.
+   - *Rekomendasi*: Integrasikan dengan peta interaktif Leaflet. Sediakan pilihan titik POI demo (Alun-Alun, Bunderan Munjul, Pasar Mambo, Kampus, dsb.) atau klik langsung pada peta. Kirim payload ke endpoint API `/api/orders` yang mencatat koordinat lat/lng, estimasi jarak rute jalan, perhitungan tarif transparan di backend, dan kode booking otomatis `ORD-YYYYMMDD-XXX`.
 2. **Penetapan Driver (Dispatch & FIFO Queue)**:
    - *Aktual*: Skema database memiliki tabel `driver_queue` untuk prinsip FIFO, tetapi belum ada modul dispatch service yang memproses antrean pesanan baru dan memasangkannya dengan driver yang tersedia.
    - *Rekomendasi*: Bangun `lib/dispatch.ts` yang mengevaluasi driver aktif dalam antrean FIFO pangkalan atau driver terdekat yang berstatus `ONLINE`, mengunci order secara atomik via transaksi Prisma, dan mengubah status ke `DITERIMA`.

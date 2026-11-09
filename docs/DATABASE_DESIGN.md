@@ -45,11 +45,11 @@ erDiagram
 ### A. Tabel `pangkalan`
 Menyimpan identitas usaha/kawasan operasional becak listrik (multi-tenant ready).
 - `id` (INT, PK, Auto Increment)
-- `nama` (VARCHAR 100): Nama pangkalan operasional (e.g. *Pangkalan Malioboro Heritage*)
+- `nama` (VARCHAR 100): Nama pangkalan operasional (e.g. *Pangkalan Becak Listrik Alun-Alun Majalengka*)
 - `alamat` (VARCHAR 255): Lokasi fisik kantor/depot pangkalan
-- `lat` (FLOAT): Latitude pusat kawasan operasional (-7.7956)
-- `lng` (FLOAT): Longitude pusat kawasan operasional (110.3658)
-- `radiusKm` (FLOAT): Batas radius radius layanan (default 3.5 km)
+- `lat` (FLOAT): Latitude pusat kawasan operasional (-6.8362)
+- `lng` (FLOAT): Longitude pusat kawasan operasional (108.2281)
+- `radiusKm` (FLOAT): Batas radius layanan (default 3.5 km)
 - `tarifDasar` (INT): Tarif awal buka pintu (default Rp5.000)
 - `tarifPerKm` (INT): Tarif per kilometer perjalanan (default Rp3.000)
 - `createdAt` (DATETIME)
@@ -58,8 +58,8 @@ Menyimpan identitas usaha/kawasan operasional becak listrik (multi-tenant ready)
 Menyimpan titik penjemputan dan tujuan populer (POI) serta lokasi depot charging.
 - `id` (INT, PK, Auto Increment)
 - `pangkalanId` (INT, FK -> `pangkalan.id`)
-- `nama` (VARCHAR 100): Contoh *Stasiun Tugu*, *Pasar Beringharjo*, *Titik Nol KM*
-- `kategori` (VARCHAR 50): STASIUN, WISATA, PASAR, HOTEL, DEPOT
+- `nama` (VARCHAR 100): Contoh *Alun-Alun Majalengka*, *Bunderan Munjul*, *Pasar Mambo*, *UNMA*
+- `kategori` (VARCHAR 50): STASIUN, WISATA, PASAR, KULINER, LANDMARK, DEPOT
 - `alamat` (VARCHAR 255)
 - `lat` (FLOAT), `lng` (FLOAT)
 - `isDepot` (BOOLEAN): Penanda stasiun pengisian daya / pangkalan induk

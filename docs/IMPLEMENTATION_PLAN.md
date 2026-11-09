@@ -9,8 +9,8 @@
 
 ### FASE 1: Fondasi Arsitektur, Zona Operasional & Skema Database
 1. **Definisi Zona Operasional Demo**:
-   - Menetapkan zona demonstrasi kawasan Yogyakarta / Malioboro Heritage Zone (lat: -7.7956, lng: 110.3658, radius 3.5 km).
-   - Menentukan titik pangkalan utama: *Pangkalan Malioboro Pusat*, *Depot Stasiun Tugu*, *Halte Alun-Alun Utara*, *Pasar Beringharjo*, *Taman Budaya*.
+   - Menetapkan zona demonstrasi kawasan Majalengka Heritage Zone (lat: -6.8362, lng: 108.2281, radius 3.5 km).
+   - Menentukan titik pangkalan utama: *Pangkalan Alun-Alun Majalengka*, *Bunderan Munjul & Tugu Bola Dunia*, *Pasar Mambo*, *Taman Dirgantara*, *Gedung Juang*.
 2. **Penyempurnaan Skema Prisma (`prisma/schema.prisma`)**:
    - Tambahkan field koordinat pada `Pangkalan`: `lat`, `lng`, `radiusKm`.
    - Tambahkan field koordinat dan telemetri pada `Driver`: `currentLat`, `currentLng`, `heading`, `lastActiveAt`.
@@ -19,7 +19,7 @@
    - Tambahkan tabel `SystemConfig` (konfigurasi kecepatan simulasi, tarif dasar, tarif per km, faktor emisi karbon).
 3. **Eksekusi Migrasi & Pembaruan Seed**:
    - Jalankan `prisma migrate` atau sinkronisasi skema MySQL.
-   - Perbarui seed `prisma/seed.ts` dengan data realistis zona Yogyakarta beserta koordinat jalan sebenarnya.
+   - Perbarui seed `prisma/seed.ts` dengan data realistis zona Majalengka beserta koordinat jalan sebenarnya.
 
 ---
 

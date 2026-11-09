@@ -168,7 +168,7 @@ async function main() {
     },
     {
       kunci: "service_zone_name",
-      nilai: "Kawasan Malioboro & Keraton Yogyakarta",
+      nilai: "Kawasan Wisata & Heritage Majalengka",
       keterangan: "Label zona operasional aktif",
     },
   ];
@@ -311,7 +311,7 @@ async function main() {
       {
         vehicleId: cadangan.id,
         jenis: "CHARGING",
-        catatan: "Pengisian daya cepat di Stasiun Depot Malioboro",
+        catatan: "Pengisian daya cepat di Stasiun Depot Alun-Alun Majalengka",
         biaya: 12000,
       },
       {
@@ -461,7 +461,7 @@ async function main() {
     }
   }
 
-  // 10. Satu Order Aktif Siap Demo (Stasiun Tugu -> Titik Nol KM)
+  // 10. Satu Order Aktif Siap Demo (Alun-Alun Majalengka -> Bunderan Munjul)
   const tarifDemo = 10400;
   const diskonDemo = 2080; // 20%
   const orderDemo = await prisma.order.create({
@@ -469,12 +469,12 @@ async function main() {
       kode: `ORD-${formatTanggal(new Date())}-${String(urutan++).padStart(3, "0")}`,
       pangkalanId: pangkalan.id,
       penumpangId: userRina.id,
-      jemputAlamat: "Stasiun Tugu Yogyakarta",
-      jemputLat: -7.7892,
-      jemputLng: 110.3635,
-      tujuanAlamat: "Titik Nol Kilometer & Museum Vredeburg",
-      tujuanLat: -7.8012,
-      tujuanLng: 110.3660,
+      jemputAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
+      jemputLat: -6.8362,
+      jemputLng: 108.2281,
+      tujuanAlamat: "Bunderan Munjul & Tugu Bola Dunia",
+      tujuanLat: -6.8295,
+      tujuanLng: 108.2198,
       jarakKm: 1.8,
       durasiMenit: 12,
       tarif: tarifDemo,

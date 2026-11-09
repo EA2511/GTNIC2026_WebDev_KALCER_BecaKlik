@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" alt="Next.js 15" />
+  <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma" alt="Prisma" />
@@ -65,7 +65,7 @@ Platform ini menghubungkan 3 aktor utama secara real-time:
 
 | Komponen            | Teknologi                         | Keterangan                                                       |
 | :------------------ | :-------------------------------- | :--------------------------------------------------------------- |
-| **Framework**       | Next.js 15 (App Router)           | Arsitektur modern Server & Client Components                     |
+| **Framework**       | Next.js 16 (App Router)           | Arsitektur modern Server & Client Components                     |
 | **Bahasa**          | TypeScript 5                      | Type-safety menyeluruh end-to-end                                |
 | **Styling**         | Vanilla Modern CSS + Tailwind     | Desain responsif, clean UI/UX, dan micro-interactions            |
 | **Peta & GIS**      | Leaflet.js + OpenStreetMap        | Pelacakan geospasial real-time tanpa ketergantungan API berbayar |
