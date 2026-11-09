@@ -55,7 +55,7 @@ export async function POST(
     const { id } = await params;
     const orderId = Number(id);
     const body = await request.json().catch(() => ({}));
-    const { pesan, senderRole, senderNama, senderId } = body;
+    const { id: incomingId, pesan, senderRole, senderNama, senderId, createdAt: incomingCreatedAt } = body;
 
     if (!pesan || !String(pesan).trim()) {
       return NextResponse.json({ message: "Pesan tidak boleh kosong." }, { status: 400 });
@@ -83,10 +83,12 @@ export async function POST(
 
     // 1. Simpan instan ke sharedStore agar langsung tampil di tab Pelanggan & Driver
     const sharedMsg = sharedStore.addChatMessage(orderId, {
+      id: Number(incomingId) || undefined,
       senderRole: actualSenderRole,
       senderId: actualSenderId,
       senderNama: actualSenderNama,
       pesan: String(pesan).trim().slice(0, 500),
+      createdAt: incomingCreatedAt ? String(incomingCreatedAt) : undefined,
     });
 
     // 2. Sinkronkan ke Prisma secara non-blocking

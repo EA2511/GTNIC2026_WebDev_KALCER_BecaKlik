@@ -1,21 +1,21 @@
 // Shared Real-Time Store (Persistensi Lintas Request + Disk Cache untuk sinkronisasi Pelanggan <-> Driver <-> Admin)
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 import {
   interpolateRoutePosition,
   generateRoadCorridorFallback,
   generatePickupApproachRoute,
   type LatLng,
-} from './geo';
-import { calculateEcoImpact } from './eco';
+} from "./geo";
+import { calculateEcoImpact } from "./eco";
 import {
   SNAPSHOT_ORDERS,
   SNAPSHOT_RATINGS,
   SNAPSHOT_REGISTERED_USERS,
   SNAPSHOT_FLEET_DRIVERS,
   SNAPSHOT_DRIVER_STATS,
-} from './defaultStoreSnapshot';
+} from "./defaultStoreSnapshot";
 import type {
   SharedOrder,
   SharedRating,
@@ -24,7 +24,7 @@ import type {
   SharedFleetDriver,
   RankedFleetDriver,
   PassengerHistorySyncItem,
-} from './types';
+} from "./types";
 
 export type {
   SharedOrder,
@@ -41,20 +41,20 @@ const BASE_RATING_TIME = Date.UTC(2026, 10, 7, 17, 0, 0);
 export const INITIAL_REGISTERED_USERS: SharedRegisteredUser[] = [
   {
     id: 101,
-    nama: 'Edrick Andreas',
-    email: 'edrick@gmail.com',
-    noHp: '081298765432',
-    password: 'password123',
-    role: 'PENUMPANG',
+    nama: "Edrick Andreas",
+    email: "edrick@gmail.com",
+    noHp: "081298765432",
+    password: "password123",
+    role: "PENUMPANG",
     createdAt: new Date(BASE_RATING_TIME).toISOString(),
   },
   {
     id: 102,
-    nama: 'Edrick Andreas',
-    email: 'edrick@becak.test',
-    noHp: '081298765432',
-    password: 'password123',
-    role: 'PENUMPANG',
+    nama: "Edrick Andreas",
+    email: "edrick@becak.test",
+    noHp: "081298765432",
+    password: "password123",
+    role: "PENUMPANG",
     createdAt: new Date(BASE_RATING_TIME).toISOString(),
   },
 ];
@@ -63,407 +63,420 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1016,
     orderId: 1016,
-    penumpangNama: 'Edrick',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Edrick",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Rute Cepat & Aman',
-    komentar: 'Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!',
+    kategori: "Rute Cepat & Aman",
+    komentar:
+      "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
     tip: 20000,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Hari ini, 19:58',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Hari ini, 19:58",
     timestamp: 1794142680000,
   },
   {
     id: 1015,
     orderId: 1015,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Perjalanan nyaman dan hening.',
+    kategori: "Tepat Waktu & Hening",
+    komentar: "Perjalanan nyaman dan hening.",
     tip: 0,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Hari ini, 10:04',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Hari ini, 10:04",
     timestamp: 1794107089636,
   },
   {
     id: 1014,
     orderId: 1014,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Perjalanan nyaman dan hening.',
+    kategori: "Tepat Waktu & Hening",
+    komentar: "Perjalanan nyaman dan hening.",
     tip: 0,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Hari ini, 09:44',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Hari ini, 09:44",
     timestamp: 1794105866745,
   },
   {
     id: 1011,
     orderId: 1011,
-    penumpangNama: 'Wowo',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Wowo",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Driver Ramah & Sopan',
-    komentar: 'MBG',
+    kategori: "Driver Ramah & Sopan",
+    komentar: "MBG",
     tip: 2000,
-    rute: 'Universitas Majalengka (Kampus UNMA) ➔ Pendopo Kabupaten Majalengka (Kantor Bupati)',
-    createdAt: 'Hari ini, 09:14',
+    rute: "Universitas Majalengka (Kampus UNMA) ➔ Pendopo Kabupaten Majalengka (Kantor Bupati)",
+    createdAt: "Hari ini, 09:14",
     timestamp: 1794104070313,
   },
   {
     id: 1010,
     orderId: 1010,
-    penumpangNama: 'Khalil',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Khalil",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Mas nya baik hati',
+    kategori: "Tepat Waktu & Hening",
+    komentar: "Mas nya baik hati",
     tip: 10000,
-    rute: 'Bandara Internasional Jawa Barat (BIJB) Kertajati ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam',
-    createdAt: 'Hari ini, 08:49',
+    rute: "Bandara Internasional Jawa Barat (BIJB) Kertajati ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    createdAt: "Hari ini, 08:49",
     timestamp: 1794102562243,
   },
   {
     id: 1009,
     orderId: 1009,
-    penumpangNama: 'Edrick Andreas',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Edrick Andreas",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Rute Cepat & Aman',
-    komentar: 'Perjalanan nyaman dan hening.',
+    kategori: "Rute Cepat & Aman",
+    komentar: "Perjalanan nyaman dan hening.",
     tip: 20000,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ SMK Negeri 1 Panyingkiran Majalengka',
-    createdAt: 'Hari ini, 00:30',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ SMK Negeri 1 Panyingkiran Majalengka",
+    createdAt: "Hari ini, 00:30",
     timestamp: 1794072652760,
   },
   {
     id: 1008,
     orderId: 1008,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Perjalanan memuaskan dan hening.',
+    kategori: "Tepat Waktu & Hening",
+    komentar: "Perjalanan memuaskan dan hening.",
     tip: 5000,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Kemarin, 23:33',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Kemarin, 23:33",
     timestamp: 1794069237984,
   },
   {
     id: 1007,
     orderId: 1007,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Perjalanan memuaskan dan hening.',
+    kategori: "Tepat Waktu & Hening",
+    komentar: "Perjalanan memuaskan dan hening.",
     tip: 5000,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Kemarin, 23:21',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Kemarin, 23:21",
     timestamp: 1794068500000,
   },
   {
     id: 1006,
     orderId: 1006,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Driver Ramah & Sopan',
-    komentar: 'Perjalanan memuaskan dan hening.',
+    kategori: "Driver Ramah & Sopan",
+    komentar: "Perjalanan memuaskan dan hening.",
     tip: 10000,
-    rute: 'Rumah Warga (Jl. Siti Armilah, Majalengka Wetan) ➔ Universitas Majalengka (Kampus UNMA)',
-    createdAt: 'Kemarin, 23:05',
+    rute: "Rumah Warga (Jl. Siti Armilah, Majalengka Wetan) ➔ Universitas Majalengka (Kampus UNMA)",
+    createdAt: "Kemarin, 23:05",
     timestamp: 1794067500000,
   },
   {
     id: 1005,
     orderId: 1005,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Rute Cepat & Aman',
-    komentar: 'Perjalanan memuaskan dan hening.',
+    kategori: "Rute Cepat & Aman",
+    komentar: "Perjalanan memuaskan dan hening.",
     tip: 20000,
-    rute: 'Rumah Warga (Perum Wijaya Kusuma, Cijati) ➔ RSUD Majalengka (Pusat Layanan Medis)',
-    createdAt: 'Kemarin, 22:43',
+    rute: "Rumah Warga (Perum Wijaya Kusuma, Cijati) ➔ RSUD Majalengka (Pusat Layanan Medis)",
+    createdAt: "Kemarin, 22:43",
     timestamp: 1794066200000,
   },
   {
     id: 1004,
     orderId: 1004,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Armada Bersih',
-    komentar: 'Perjalanan memuaskan dan hening.',
+    kategori: "Armada Bersih",
+    komentar: "Perjalanan memuaskan dan hening.",
     tip: 5000,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Kemarin, 22:20',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Kemarin, 22:20",
     timestamp: 1794064800000,
   },
   {
     id: 1003,
     orderId: 1003,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Perjalanan memuaskan dan hening.',
+    kategori: "Tepat Waktu & Hening",
+    komentar: "Perjalanan memuaskan dan hening.",
     tip: 2000,
-    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Kemarin, 22:00',
+    rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Kemarin, 22:00",
     timestamp: 1794063600000,
   },
   {
     id: 1002,
     orderId: 1002,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Perjalanan memuaskan dan hening.',
+    kategori: "Tepat Waktu & Hening",
+    komentar: "Perjalanan memuaskan dan hening.",
     tip: 10000,
-    rute: 'Rumah Warga (Perum Wijaya Kusuma, Cijati) ➔ Pasar Tradisional Sindangkasih Cigasong',
-    createdAt: 'Kemarin, 21:20',
+    rute: "Rumah Warga (Perum Wijaya Kusuma, Cijati) ➔ Pasar Tradisional Sindangkasih Cigasong",
+    createdAt: "Kemarin, 21:20",
     timestamp: 1794061200000,
   },
   {
     id: 1000,
     orderId: 1000,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Rute Cepat & Aman',
-    komentar: 'Perjalanan nyaman dan hening.',
+    kategori: "Rute Cepat & Aman",
+    komentar: "Perjalanan nyaman dan hening.",
     tip: 0,
-    rute: 'Terminal Maja Majalengka ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam',
-    createdAt: 'Kemarin, 20:20',
+    rute: "Terminal Maja Majalengka ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    createdAt: "Kemarin, 20:20",
     timestamp: 1794057600000,
   },
   {
     id: 1001,
     orderId: 1001,
-    penumpangNama: 'Edrick Andreas',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Edrick Andreas",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Rute Cepat & Aman',
-    komentar: 'makasihh pakkkkkk',
+    kategori: "Rute Cepat & Aman",
+    komentar: "makasihh pakkkkkk",
     tip: 20000,
-    rute: 'Universitas Majalengka (Kampus UNMA) ➔ RSUD Cideres Majalengka',
-    createdAt: 'Kemarin, 16:37',
+    rute: "Universitas Majalengka (Kampus UNMA) ➔ RSUD Cideres Majalengka",
+    createdAt: "Kemarin, 16:37",
     timestamp: Date.UTC(2026, 10, 7, 9, 37, 0),
   },
   {
     id: 1013,
     orderId: 1013,
-    penumpangNama: 'Edrick',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Edrick",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Perjalanan siang sangat nyaman, adem dan pak sopir ramah sekali!',
+    kategori: "Tepat Waktu & Hening",
+    komentar:
+      "Perjalanan siang sangat nyaman, adem dan pak sopir ramah sekali!",
     tip: 10000,
-    rute: 'Universitas Majalengka (Kampus UNMA) ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam',
-    createdAt: 'Kemarin, 13:10',
+    rute: "Universitas Majalengka (Kampus UNMA) ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam",
+    createdAt: "Kemarin, 13:10",
     timestamp: 1794031800000,
   },
   {
     id: 1012,
     orderId: 1012,
-    penumpangNama: 'Edrick',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Edrick",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Rute Cepat & Aman',
-    komentar: 'Becak listrik terbaik di Majalengka, cepat dan bebas polusi!',
+    kategori: "Rute Cepat & Aman",
+    komentar: "Becak listrik terbaik di Majalengka, cepat dan bebas polusi!",
     tip: 15000,
-    rute: 'Pasar Mambo Kuliner Majalengka ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: 'Kemarin, 12:30',
+    rute: "Pasar Mambo Kuliner Majalengka ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "Kemarin, 12:30",
     timestamp: 1794029400000,
   },
   {
     id: 991,
     orderId: 991,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Becaknya bersih dan tidak bising. Sangat nyaman untuk keliling kota!',
+    kategori: "Tepat Waktu & Hening",
+    komentar:
+      "Becaknya bersih dan tidak bising. Sangat nyaman untuk keliling kota!",
     tip: 2000,
-    rute: 'Alun-Alun Majalengka ➔ Pasar Mambo Sentra Kuliner',
-    createdAt: '5 hari lalu, 14:20',
+    rute: "Alun-Alun Majalengka ➔ Pasar Mambo Sentra Kuliner",
+    createdAt: "5 hari lalu, 14:20",
     timestamp: Date.UTC(2026, 10, 3, 7, 20, 0),
   },
   {
     id: 990,
     orderId: 990,
-    penumpangNama: 'Rina Kusuma',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rina Kusuma",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Driver Ramah',
-    komentar: 'Pak Budi ramah sekali, menjelaskan sejarah Majalengka di jalan.',
+    kategori: "Driver Ramah",
+    komentar: "Pak Budi ramah sekali, menjelaskan sejarah Majalengka di jalan.",
     tip: 5000,
-    rute: 'Bunderan Munjul ➔ Gedung Juang Majalengka',
-    createdAt: '6 hari lalu, 09:45',
+    rute: "Bunderan Munjul ➔ Gedung Juang Majalengka",
+    createdAt: "6 hari lalu, 09:45",
     timestamp: Date.UTC(2026, 10, 2, 2, 45, 0),
   },
   {
     id: 989,
     orderId: 989,
-    penumpangNama: 'Ahmad Fauzi',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Ahmad Fauzi",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Becak listriknya sangat nyaman dan bersih, tidak bising sama sekali saat menuju kampus!',
+    kategori: "Tepat Waktu & Hening",
+    komentar:
+      "Becak listriknya sangat nyaman dan bersih, tidak bising sama sekali saat menuju kampus!",
     tip: 3000,
-    rute: 'Jl. Siti Armilah ➔ Universitas Majalengka (UNMA)',
-    createdAt: '1 Nov 2026, 15:35',
+    rute: "Jl. Siti Armilah ➔ Universitas Majalengka (UNMA)",
+    createdAt: "1 Nov 2026, 15:35",
     timestamp: Date.UTC(2026, 10, 1, 8, 35, 0),
   },
   {
     id: 988,
     orderId: 988,
-    penumpangNama: 'Hj. Siti Rahmawati',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Hj. Siti Rahmawati",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Driver Ramah & Sabar',
-    komentar: 'Pak Budi sangat membantu membawakan belanjaan pasar saya sampai depan teras rumah.',
+    kategori: "Driver Ramah & Sabar",
+    komentar:
+      "Pak Budi sangat membantu membawakan belanjaan pasar saya sampai depan teras rumah.",
     tip: 5000,
-    rute: 'Pasar Sindangkasih Cigasong ➔ Perum Wijaya Kusuma Cijati',
-    createdAt: '31 Okt 2026, 10:00',
+    rute: "Pasar Sindangkasih Cigasong ➔ Perum Wijaya Kusuma Cijati",
+    createdAt: "31 Okt 2026, 10:00",
     timestamp: Date.UTC(2026, 9, 31, 3, 0, 0),
   },
   {
     id: 987,
     orderId: 987,
-    penumpangNama: 'Dr. Hendra Pratama',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Dr. Hendra Pratama",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Kabin Bersih & Nyaman',
-    komentar: 'Suspensi empuk dan bebas asap knalpot, sangat cocok untuk pasien lansia ke RSUD.',
+    kategori: "Kabin Bersih & Nyaman",
+    komentar:
+      "Suspensi empuk dan bebas asap knalpot, sangat cocok untuk pasien lansia ke RSUD.",
     tip: 5000,
-    rute: 'Pemukiman Babakan Jawa ➔ RSUD Majalengka',
-    createdAt: '30 Okt 2026, 11:15',
+    rute: "Pemukiman Babakan Jawa ➔ RSUD Majalengka",
+    createdAt: "30 Okt 2026, 11:15",
     timestamp: Date.UTC(2026, 9, 30, 4, 15, 0),
   },
   {
     id: 986,
     orderId: 986,
-    penumpangNama: 'Neng Dinda Permata',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Neng Dinda Permata",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tarif Jujur & Transparan',
-    komentar: 'Bayar pakai QRIS praktis banget, tarifnya pas sesuai aplikasi tanpa tawar-menawar.',
+    kategori: "Tarif Jujur & Transparan",
+    komentar:
+      "Bayar pakai QRIS praktis banget, tarifnya pas sesuai aplikasi tanpa tawar-menawar.",
     tip: 2000,
-    rute: 'SMAN 1 Majalengka ➔ Surya Toserba Majalengka',
-    createdAt: '29 Okt 2026, 13:30',
+    rute: "SMAN 1 Majalengka ➔ Surya Toserba Majalengka",
+    createdAt: "29 Okt 2026, 13:30",
     timestamp: Date.UTC(2026, 9, 29, 6, 30, 0),
   },
   {
     id: 985,
     orderId: 985,
-    penumpangNama: 'Kang Asep Sunandar',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Kang Asep Sunandar",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Jemputan di Taman Dirgantara sangat cepat, kanopi becaknya adem meski siang hari.',
+    kategori: "Tepat Waktu & Hening",
+    komentar:
+      "Jemputan di Taman Dirgantara sangat cepat, kanopi becaknya adem meski siang hari.",
     tip: 0,
-    rute: 'Taman Dirgantara Munjul ➔ Alun-Alun Majalengka',
-    createdAt: '28 Okt 2026, 14:00',
+    rute: "Taman Dirgantara Munjul ➔ Alun-Alun Majalengka",
+    createdAt: "28 Okt 2026, 14:00",
     timestamp: Date.UTC(2026, 9, 28, 7, 0, 0),
   },
   {
     id: 984,
     orderId: 984,
-    penumpangNama: 'Ibu Dewi Sartika',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Ibu Dewi Sartika",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Driver Ramah',
-    komentar: 'Anak-anak senang sekali naik becak listrik biru langit ini keliling Bunderan Munjul.',
+    kategori: "Driver Ramah",
+    komentar:
+      "Anak-anak senang sekali naik becak listrik biru langit ini keliling Bunderan Munjul.",
     tip: 5000,
-    rute: 'Alun-Alun Majalengka ➔ Bunderan Munjul & Tugu Bola Dunia',
-    createdAt: '27 Okt 2026, 15:00',
+    rute: "Alun-Alun Majalengka ➔ Bunderan Munjul & Tugu Bola Dunia",
+    createdAt: "27 Okt 2026, 15:00",
     timestamp: Date.UTC(2026, 9, 27, 8, 0, 0),
   },
   {
     id: 983,
     orderId: 983,
-    penumpangNama: 'Rizky Maulana',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Rizky Maulana",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 5,
-    kategori: 'Tepat Waktu & Hening',
-    komentar: 'Solusi transportasi jarak dekat terbaik di Majalengka, bebas polusi dan modern.',
+    kategori: "Tepat Waktu & Hening",
+    komentar:
+      "Solusi transportasi jarak dekat terbaik di Majalengka, bebas polusi dan modern.",
     tip: 2000,
-    rute: 'GGM Majalengka ➔ Kopi Apik Jl. Satari',
-    createdAt: '26 Okt 2026, 16:40',
+    rute: "GGM Majalengka ➔ Kopi Apik Jl. Satari",
+    createdAt: "26 Okt 2026, 16:40",
     timestamp: Date.UTC(2026, 9, 26, 9, 40, 0),
   },
   {
     id: 982,
     orderId: 982,
-    penumpangNama: 'Bapak H. Tatang Koswara',
-    driverNama: 'Budi Santoso',
-    unit: 'BL-001',
+    penumpangNama: "Bapak H. Tatang Koswara",
+    driverNama: "Budi Santoso",
+    unit: "BL-001",
     skor: 4,
-    kategori: 'Berkendara Aman',
-    komentar: 'Laju becak stabil dan sopan di jalan raya KH Abdul Halim. Mantap BecaKlik!',
+    kategori: "Berkendara Aman",
+    komentar:
+      "Laju becak stabil dan sopan di jalan raya KH Abdul Halim. Mantap BecaKlik!",
     tip: 2000,
-    rute: 'Pendopo Majalengka ➔ Perum Puri Asih',
-    createdAt: '25 Okt 2026, 14:15',
+    rute: "Pendopo Majalengka ➔ Perum Puri Asih",
+    createdAt: "25 Okt 2026, 14:15",
     timestamp: Date.UTC(2026, 9, 25, 7, 15, 0),
   },
   {
     id: 981,
     orderId: 981,
-    penumpangNama: 'Larasati Putri',
-    driverNama: 'Agus Prayitno',
-    unit: 'BL-002',
+    penumpangNama: "Larasati Putri",
+    driverNama: "Agus Prayitno",
+    unit: "BL-002",
     skor: 5,
-    kategori: 'Driver Ramah',
-    komentar: 'Pak Agus sigap dan tepat waktu saat menjemput di depan gerbang Kampus UNMA.',
+    kategori: "Driver Ramah",
+    komentar:
+      "Pak Agus sigap dan tepat waktu saat menjemput di depan gerbang Kampus UNMA.",
     tip: 2000,
-    rute: 'Kampus UNMA ➔ Yogya Grand Majalengka',
-    createdAt: '24 Okt 2026, 10:20',
+    rute: "Kampus UNMA ➔ Yogya Grand Majalengka",
+    createdAt: "24 Okt 2026, 10:20",
     timestamp: Date.UTC(2026, 9, 24, 3, 20, 0),
   },
   {
     id: 980,
     orderId: 980,
-    penumpangNama: 'Dadan Ramdani',
-    driverNama: 'Joko Riyadi',
-    unit: 'BL-003',
+    penumpangNama: "Dadan Ramdani",
+    driverNama: "Joko Riyadi",
+    unit: "BL-003",
     skor: 5,
-    kategori: 'Kabin Bersih & Nyaman',
-    komentar: 'Kabin luas muat belanjaan banyak dari Pasar Cigasong, bebas bau asap.',
+    kategori: "Kabin Bersih & Nyaman",
+    komentar:
+      "Kabin luas muat belanjaan banyak dari Pasar Cigasong, bebas bau asap.",
     tip: 3000,
-    rute: 'Pasar Sindangkasih Cigasong ➔ Perum BCA Cigasong',
-    createdAt: '23 Okt 2026, 17:00',
+    rute: "Pasar Sindangkasih Cigasong ➔ Perum BCA Cigasong",
+    createdAt: "23 Okt 2026, 17:00",
     timestamp: Date.UTC(2026, 9, 23, 10, 0, 0),
   },
 ];
@@ -472,16 +485,19 @@ const INITIAL_RATINGS: SharedRating[] = [
  * Format timestamp ulasan menjadi format relatif & tanggal dinamis secara real-time.
  * Waktu dihitung berdasarkan zona waktu Indonesia (WIB UTC+7).
  */
-export function formatDynamicReviewTime(timestamp: number, now: number = Date.now()): string {
+export function formatDynamicReviewTime(
+  timestamp: number,
+  now: number = Date.now(),
+): string {
   const ts = Number(timestamp);
-  if (!ts || isNaN(ts) || ts <= 0) return 'Baru saja';
+  if (!ts || isNaN(ts) || ts <= 0) return "Baru saja";
 
   const diffMs = Math.max(0, now - ts);
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
 
-  if (diffMin < 1) return 'Baru saja';
+  if (diffMin < 1) return "Baru saja";
   if (diffMin < 60) return `${diffMin} menit lalu`;
 
   // WIB (UTC+7) Date formatting
@@ -492,8 +508,8 @@ export function formatDynamicReviewTime(timestamp: number, now: number = Date.no
   const rYear = reviewWib.getUTCFullYear();
   const rMonth = reviewWib.getUTCMonth();
   const rDate = reviewWib.getUTCDate();
-  const rHours = String(reviewWib.getUTCHours()).padStart(2, '0');
-  const rMinutes = String(reviewWib.getUTCMinutes()).padStart(2, '0');
+  const rHours = String(reviewWib.getUTCHours()).padStart(2, "0");
+  const rMinutes = String(reviewWib.getUTCMinutes()).padStart(2, "0");
   const timeStr = `${rHours}:${rMinutes}`;
 
   const nYear = nowWib.getUTCFullYear();
@@ -502,7 +518,9 @@ export function formatDynamicReviewTime(timestamp: number, now: number = Date.no
 
   const rDayTimestamp = Date.UTC(rYear, rMonth, rDate);
   const nDayTimestamp = Date.UTC(nYear, nMonth, nDate);
-  const calendarDaysDiff = Math.round((nDayTimestamp - rDayTimestamp) / (24 * 3600 * 1000));
+  const calendarDaysDiff = Math.round(
+    (nDayTimestamp - rDayTimestamp) / (24 * 3600 * 1000),
+  );
 
   if (calendarDaysDiff === 0) {
     if (diffHour < 4) return `${diffHour} jam lalu`;
@@ -515,25 +533,41 @@ export function formatDynamicReviewTime(timestamp: number, now: number = Date.no
     return `${calendarDaysDiff} hari lalu, ${timeStr}`;
   }
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
   return `${rDate} ${months[rMonth]} ${rYear}, ${timeStr}`;
 }
 
 /**
  * Parsing teks createdAt lama menjadi timestamp numerik akurat.
  */
-export function parseRatingTimestamp(r: Partial<SharedRating>, now: number = Date.now()): number {
-  if (typeof r.timestamp === 'number' && r.timestamp > 1700000000000) {
+export function parseRatingTimestamp(
+  r: Partial<SharedRating>,
+  now: number = Date.now(),
+): number {
+  if (typeof r.timestamp === "number" && r.timestamp > 1700000000000) {
     return r.timestamp;
   }
   if (r.orderId === 1001) {
     return Date.UTC(2026, 10, 7, 9, 37, 0); // 7 Nov 2026, 16:37 WIB
   }
 
-  const raw = (r.createdAt || '').trim();
+  const raw = (r.createdAt || "").trim();
   const lower = raw.toLowerCase();
 
-  if (!raw || lower.includes('baru saja')) {
+  if (!raw || lower.includes("baru saja")) {
     return now;
   }
 
@@ -552,35 +586,73 @@ export function parseRatingTimestamp(r: Partial<SharedRating>, now: number = Dat
   const WIB_OFFSET = 7 * 3600 * 1000;
   const nowWib = new Date(now + WIB_OFFSET);
 
-  if (lower.includes('hari ini')) {
+  if (lower.includes("hari ini")) {
     const timeMatch = lower.match(/(\d{1,2})[:.](\d{2})/);
     const hh = timeMatch ? parseInt(timeMatch[1], 10) : 12;
     const mm = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-    return Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate(), hh - 7, mm, 0);
+    return Date.UTC(
+      nowWib.getUTCFullYear(),
+      nowWib.getUTCMonth(),
+      nowWib.getUTCDate(),
+      hh - 7,
+      mm,
+      0,
+    );
   }
 
-  if (lower.includes('kemarin')) {
+  if (lower.includes("kemarin")) {
     const timeMatch = lower.match(/(\d{1,2})[:.](\d{2})/);
     const hh = timeMatch ? parseInt(timeMatch[1], 10) : 12;
     const mm = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-    return Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate() - 1, hh - 7, mm, 0);
+    return Date.UTC(
+      nowWib.getUTCFullYear(),
+      nowWib.getUTCMonth(),
+      nowWib.getUTCDate() - 1,
+      hh - 7,
+      mm,
+      0,
+    );
   }
 
-  const dayAgoMatch = lower.match(/(\d+)\s*hari\s*lalu(?:[,.\s]+(\d{1,2})[:.](\d{2}))?/);
+  const dayAgoMatch = lower.match(
+    /(\d+)\s*hari\s*lalu(?:[,.\s]+(\d{1,2})[:.](\d{2}))?/,
+  );
   if (dayAgoMatch) {
     const days = parseInt(dayAgoMatch[1], 10);
     const hh = dayAgoMatch[2] ? parseInt(dayAgoMatch[2], 10) : 12;
     const mm = dayAgoMatch[3] ? parseInt(dayAgoMatch[3], 10) : 0;
-    return Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate() - days, hh - 7, mm, 0);
+    return Date.UTC(
+      nowWib.getUTCFullYear(),
+      nowWib.getUTCMonth(),
+      nowWib.getUTCDate() - days,
+      hh - 7,
+      mm,
+      0,
+    );
   }
 
   const dateMatch = lower.match(
-    /(\d{1,2})\s+([a-z]{3})[a-z]*\s+(\d{4})(?:[,.\s]+(\d{1,2})[:.](\d{2}))?/
+    /(\d{1,2})\s+([a-z]{3})[a-z]*\s+(\d{4})(?:[,.\s]+(\d{1,2})[:.](\d{2}))?/,
   );
   if (dateMatch) {
     const day = parseInt(dateMatch[1], 10);
     const monthIdxMap: Record<string, number> = {
-      jan: 0, feb: 1, mar: 2, apr: 3, mei: 4, may: 4, jun: 5, jul: 6, agu: 7, aug: 7, sep: 8, okt: 9, oct: 9, nov: 10, des: 11, dec: 11,
+      jan: 0,
+      feb: 1,
+      mar: 2,
+      apr: 3,
+      mei: 4,
+      may: 4,
+      jun: 5,
+      jul: 6,
+      agu: 7,
+      aug: 7,
+      sep: 8,
+      okt: 9,
+      oct: 9,
+      nov: 10,
+      des: 11,
+      dec: 11,
     };
     const month = monthIdxMap[dateMatch[2].toLowerCase()] ?? 10;
     const year = parseInt(dateMatch[3], 10);
@@ -593,7 +665,9 @@ export function parseRatingTimestamp(r: Partial<SharedRating>, now: number = Dat
 }
 
 function getLinkedOrderTimestamp(orderId: number): number | null {
-  const globalStore = (globalThis as unknown as { __shared_store__?: StoreData }).__shared_store__;
+  const globalStore = (
+    globalThis as unknown as { __shared_store__?: StoreData }
+  ).__shared_store__;
   if (!globalStore?.orders) return null;
   const order = globalStore.orders.get(orderId);
   if (!order?.createdAt) return null;
@@ -606,6 +680,21 @@ function isCorruptedBaseTimestamp(ts: number): boolean {
   return ts >= 1794070800000 && ts <= 1794070860000;
 }
 
+function parseAndFormatRatingTime(
+  r: SharedRating,
+  now: number = Date.now(),
+): { createdAt: string; timestamp: number } {
+  const orderTs = getLinkedOrderTimestamp(r.orderId);
+  let ts = orderTs || parseRatingTimestamp(r, now);
+  if (r.orderId === 1001) {
+    ts = Date.UTC(2026, 10, 7, 9, 37, 0);
+  }
+  return {
+    createdAt: formatDynamicReviewTime(ts, now),
+    timestamp: ts,
+  };
+}
+
 function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
   const seedMap = new Map<number, SharedRating>();
   for (const sr of INITIAL_RATINGS) {
@@ -616,14 +705,18 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
 
   for (const r of list) {
     if (!r) continue;
-    const orderId = r.orderId ?? (typeof r.id === 'number' && r.id < 1_000_000_000_000 ? r.id : undefined);
-    if (typeof orderId !== 'number') continue;
+    const orderId =
+      r.orderId ??
+      (typeof r.id === "number" && r.id < 1_000_000_000_000 ? r.id : undefined);
+    if (typeof orderId !== "number") continue;
     const seed = seedMap.get(orderId);
     const orderTs = getLinkedOrderTimestamp(orderId);
 
     let ts =
       orderTs ||
-      (typeof r.timestamp === 'number' && r.timestamp > 1700000000000 && !isCorruptedBaseTimestamp(r.timestamp)
+      (typeof r.timestamp === "number" &&
+      r.timestamp > 1700000000000 &&
+      !isCorruptedBaseTimestamp(r.timestamp)
         ? r.timestamp
         : seed?.timestamp || parseRatingTimestamp(r, now));
 
@@ -644,7 +737,7 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
     const authorName =
       orderId <= 1016 && seed?.penumpangNama
         ? seed.penumpangNama
-        : r.penumpangNama || seed?.penumpangNama || 'Edrick';
+        : r.penumpangNama || seed?.penumpangNama || "Edrick";
 
     const finalReview: SharedRating =
       orderId <= 1016 && seed
@@ -685,12 +778,12 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
 const INITIAL_FLEET_DRIVERS: SharedFleetDriver[] = [
   {
     rawId: 1,
-    id: 'DRV-001',
-    nama: 'Budi Santoso',
-    email: 'budi@becak.test',
-    noHp: '081234560001',
-    unit: 'BL-001',
-    status: 'ONLINE',
+    id: "DRV-001",
+    nama: "Budi Santoso",
+    email: "budi@becak.test",
+    noHp: "081234560001",
+    unit: "BL-001",
+    status: "ONLINE",
     battery: 94,
     trips: 48,
     completedToday: 6,
@@ -699,19 +792,19 @@ const INITIAL_FLEET_DRIVERS: SharedFleetDriver[] = [
     rating: 4.95,
     onTimeRate: 99,
     ecoScore: 99,
-    koridor: 'Alun-Alun · KH Abdul Halim · Pasar Mambo',
+    koridor: "Alun-Alun · KH Abdul Halim · Pasar Mambo",
     lat: -6.8355,
     lng: 108.2275,
     heading: 180,
   },
   {
     rawId: 2,
-    id: 'DRV-002',
-    nama: 'Agus Prayitno',
-    email: 'agus@becak.test',
-    noHp: '081234560002',
-    unit: 'BL-002',
-    status: 'ONLINE',
+    id: "DRV-002",
+    nama: "Agus Prayitno",
+    email: "agus@becak.test",
+    noHp: "081234560002",
+    unit: "BL-002",
+    status: "ONLINE",
     battery: 88,
     trips: 44,
     completedToday: 5,
@@ -720,19 +813,19 @@ const INITIAL_FLEET_DRIVERS: SharedFleetDriver[] = [
     rating: 4.92,
     onTimeRate: 98,
     ecoScore: 97,
-    koridor: 'Bunderan Munjul · Kampus UNMA · Taman Dirgantara',
+    koridor: "Bunderan Munjul · Kampus UNMA · Taman Dirgantara",
     lat: -6.8295,
     lng: 108.2198,
     heading: 90,
   },
   {
     rawId: 3,
-    id: 'DRV-003',
-    nama: 'Joko Riyadi',
-    email: 'joko@becak.test',
-    noHp: '081234560003',
-    unit: 'BL-003',
-    status: 'ONLINE',
+    id: "DRV-003",
+    nama: "Joko Riyadi",
+    email: "joko@becak.test",
+    noHp: "081234560003",
+    unit: "BL-003",
+    status: "ONLINE",
     battery: 82,
     trips: 39,
     completedToday: 5,
@@ -741,19 +834,19 @@ const INITIAL_FLEET_DRIVERS: SharedFleetDriver[] = [
     rating: 4.9,
     onTimeRate: 97,
     ecoScore: 96,
-    koridor: 'Pasar Sindangkasih · Cigasong · Perum BCA',
+    koridor: "Pasar Sindangkasih · Cigasong · Perum BCA",
     lat: -6.837,
     lng: 108.229,
     heading: 270,
   },
   {
     rawId: 4,
-    id: 'DRV-004',
-    nama: 'Wawan Hermawan',
-    email: 'wawan@becak.test',
-    noHp: '081234560004',
-    unit: 'BL-004',
-    status: 'ONLINE',
+    id: "DRV-004",
+    nama: "Wawan Hermawan",
+    email: "wawan@becak.test",
+    noHp: "081234560004",
+    unit: "BL-004",
+    status: "ONLINE",
     battery: 86,
     trips: 35,
     completedToday: 4,
@@ -762,19 +855,19 @@ const INITIAL_FLEET_DRIVERS: SharedFleetDriver[] = [
     rating: 4.88,
     onTimeRate: 96,
     ecoScore: 95,
-    koridor: 'RSUD Majalengka · Pasar Balong · Babakan Jawa',
+    koridor: "RSUD Majalengka · Pasar Balong · Babakan Jawa",
     lat: -6.8388,
     lng: 108.224,
     heading: 45,
   },
   {
     rawId: 5,
-    id: 'DRV-005',
-    nama: 'Dedi Kusnadi',
-    email: 'dedi@becak.test',
-    noHp: '081234560005',
-    unit: 'BL-005',
-    status: 'ONLINE',
+    id: "DRV-005",
+    nama: "Dedi Kusnadi",
+    email: "dedi@becak.test",
+    noHp: "081234560005",
+    unit: "BL-005",
+    status: "ONLINE",
     battery: 91,
     trips: 31,
     completedToday: 4,
@@ -783,19 +876,19 @@ const INITIAL_FLEET_DRIVERS: SharedFleetDriver[] = [
     rating: 4.87,
     onTimeRate: 95,
     ecoScore: 95,
-    koridor: 'Yogya Grand · Surya Toserba · Stadion Warung Jambu',
+    koridor: "Yogya Grand · Surya Toserba · Stadion Warung Jambu",
     lat: -6.8348,
     lng: 108.231,
     heading: 120,
   },
   {
     rawId: 6,
-    id: 'DRV-006',
-    nama: 'Hendra Gunawan',
-    email: 'hendra@becak.test',
-    noHp: '081234560006',
-    unit: 'BL-006',
-    status: 'OFFLINE',
+    id: "DRV-006",
+    nama: "Hendra Gunawan",
+    email: "hendra@becak.test",
+    noHp: "081234560006",
+    unit: "BL-006",
+    status: "OFFLINE",
     battery: 76,
     trips: 26,
     completedToday: 3,
@@ -804,7 +897,7 @@ const INITIAL_FLEET_DRIVERS: SharedFleetDriver[] = [
     rating: 4.84,
     onTimeRate: 94,
     ecoScore: 93,
-    koridor: 'Perum Wijaya Kusuma · Cijati · Cicurug',
+    koridor: "Perum Wijaya Kusuma · Cijati · Cicurug",
     lat: -6.8465,
     lng: 108.2345,
     heading: 0,
@@ -818,7 +911,7 @@ interface StoreData {
   registeredUsers: Map<string, SharedRegisteredUser>;
   fleetDrivers: SharedFleetDriver[];
   syncedHistoryIds: Set<number>;
-  driverStatus: 'ONLINE' | 'OFFLINE' | 'ON_TRIP';
+  driverStatus: "ONLINE" | "OFFLINE" | "ON_TRIP";
   driverRating: number;
   driverTotalTrips: number;
   driverCompletedToday: number;
@@ -829,9 +922,11 @@ interface StoreData {
 }
 
 const CACHE_FILE_PATH =
-  process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.TMPDIR
-    ? path.join('/tmp', '.becak-store-cache.json')
-    : path.join(process.cwd(), '.becak-store-cache.json');
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.TMPDIR
+    ? path.join("/tmp", ".becak-store-cache.json")
+    : path.join(process.cwd(), ".becak-store-cache.json");
 
 function loadPersistedCache(): Partial<{
   version: number;
@@ -841,7 +936,7 @@ function loadPersistedCache(): Partial<{
   registeredUsers: [string, SharedRegisteredUser][];
   fleetDrivers: SharedFleetDriver[];
   syncedHistoryIds: number[];
-  driverStatus: 'ONLINE' | 'OFFLINE' | 'ON_TRIP';
+  driverStatus: "ONLINE" | "OFFLINE" | "ON_TRIP";
   driverRating: number;
   driverTotalTrips: number;
   driverCompletedToday: number;
@@ -850,7 +945,7 @@ function loadPersistedCache(): Partial<{
 }> | null {
   try {
     if (fs.existsSync(CACHE_FILE_PATH)) {
-      const raw = fs.readFileSync(CACHE_FILE_PATH, 'utf-8');
+      const raw = fs.readFileSync(CACHE_FILE_PATH, "utf-8");
       return JSON.parse(raw);
     }
   } catch {
@@ -876,7 +971,7 @@ function savePersistedCache(s: StoreData): void {
       driverEarningsToday: s.driverEarningsToday,
       nextOrderId: s.nextOrderId,
     };
-    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(payload), 'utf-8');
+    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(payload), "utf-8");
   } catch {
     // ignore write error in read-only environments
   }
@@ -888,7 +983,7 @@ function normalizeAndSortRatings(rawRatings: SharedRating[]): SharedRating[] {
     .filter((r) => r && r.orderId >= 1000)
     .map((r) => {
       let ts =
-        typeof r.timestamp === 'number' && r.timestamp > 1700000000000
+        typeof r.timestamp === "number" && r.timestamp > 1700000000000
           ? r.timestamp
           : parseRatingTimestamp(r, now);
       if (r.orderId === 1001 && (!r.timestamp || r.timestamp > now + 60_000)) {
@@ -911,13 +1006,18 @@ function normalizeAndSortRatings(rawRatings: SharedRating[]): SharedRating[] {
   return sortRatingsNewestFirst(merged);
 }
 
-const globalForStore = globalThis as unknown as { __shared_store__?: StoreData };
+const globalForStore = globalThis as unknown as {
+  __shared_store__?: StoreData;
+};
 
 if (!globalForStore.__shared_store__) {
   const cached = loadPersistedCache();
-  const rawRatings = cached?.ratings && cached.ratings.length > 0 ? cached.ratings : SNAPSHOT_RATINGS;
+  const rawRatings =
+    cached?.ratings && cached.ratings.length > 0
+      ? cached.ratings
+      : SNAPSHOT_RATINGS;
   const mergedRatings = normalizeAndSortRatings(rawRatings);
-  
+
   const userEntries =
     cached?.registeredUsers && cached.registeredUsers.length > 0
       ? cached.registeredUsers
@@ -930,26 +1030,45 @@ if (!globalForStore.__shared_store__) {
   }
 
   const initialOrdersEntries =
-    cached?.orders && cached.orders.length > 0 ? cached.orders : SNAPSHOT_ORDERS;
+    cached?.orders && cached.orders.length > 0
+      ? cached.orders
+      : SNAPSHOT_ORDERS;
 
   globalForStore.__shared_store__ = {
     orders: new Map<number, SharedOrder>(initialOrdersEntries),
-    chatMessages: new Map<number, SharedChatMessage[]>(cached?.chatMessages || []),
+    chatMessages: new Map<number, SharedChatMessage[]>(
+      cached?.chatMessages || [],
+    ),
     registeredUsers: initialRegUsersMap,
     ratings: mergedRatings,
     fleetDrivers:
       cached?.fleetDrivers && cached.fleetDrivers.length >= 5
         ? cached.fleetDrivers
-        : (SNAPSHOT_FLEET_DRIVERS.length >= 5 ? SNAPSHOT_FLEET_DRIVERS : INITIAL_FLEET_DRIVERS).map((d) => ({ ...d })),
+        : (SNAPSHOT_FLEET_DRIVERS.length >= 5
+            ? SNAPSHOT_FLEET_DRIVERS
+            : INITIAL_FLEET_DRIVERS
+          ).map((d) => ({ ...d })),
     syncedHistoryIds: new Set<number>(
-      cached?.syncedHistoryIds || SNAPSHOT_DRIVER_STATS.syncedHistoryIds || [990, 991, 1000, 1001]
+      cached?.syncedHistoryIds ||
+        SNAPSHOT_DRIVER_STATS.syncedHistoryIds || [990, 991, 1000, 1001],
     ),
-    driverStatus: cached?.driverStatus || SNAPSHOT_DRIVER_STATS.driverStatus || 'ONLINE',
-    driverRating: cached?.driverRating ?? SNAPSHOT_DRIVER_STATS.driverRating ?? 4.95,
-    driverTotalTrips: cached?.driverTotalTrips ?? SNAPSHOT_DRIVER_STATS.driverTotalTrips ?? 63,
-    driverCompletedToday: cached?.driverCompletedToday ?? SNAPSHOT_DRIVER_STATS.driverCompletedToday ?? 21,
-    driverEarningsToday: cached?.driverEarningsToday ?? SNAPSHOT_DRIVER_STATS.driverEarningsToday ?? 425738,
-    nextOrderId: cached?.nextOrderId ?? Math.max(1020, (Math.floor(Date.now() / 1000) % 900000) + 100000),
+    driverStatus:
+      cached?.driverStatus || SNAPSHOT_DRIVER_STATS.driverStatus || "ONLINE",
+    driverRating:
+      cached?.driverRating ?? SNAPSHOT_DRIVER_STATS.driverRating ?? 4.95,
+    driverTotalTrips:
+      cached?.driverTotalTrips ?? SNAPSHOT_DRIVER_STATS.driverTotalTrips ?? 63,
+    driverCompletedToday:
+      cached?.driverCompletedToday ??
+      SNAPSHOT_DRIVER_STATS.driverCompletedToday ??
+      21,
+    driverEarningsToday:
+      cached?.driverEarningsToday ??
+      SNAPSHOT_DRIVER_STATS.driverEarningsToday ??
+      425738,
+    nextOrderId:
+      cached?.nextOrderId ??
+      Math.max(1020, (Math.floor(Date.now() / 1000) % 900000) + 100000),
     nextUserId: 110,
     nextChatId: 500,
   };
@@ -967,17 +1086,17 @@ for (const u of INITIAL_REGISTERED_USERS) {
 if (!store.orders.has(1001)) {
   store.orders.set(1001, {
     id: 1001,
-    kode: 'ORD-20261107-613',
-    status: 'SELESAI',
-    jemputAlamat: 'Universitas Majalengka (Kampus UNMA)',
+    kode: "ORD-20261107-613",
+    status: "SELESAI",
+    jemputAlamat: "Universitas Majalengka (Kampus UNMA)",
     jemputLat: -6.8295,
     jemputLng: 108.2198,
-    tujuanAlamat: 'RSUD Cideres Majalengka',
+    tujuanAlamat: "RSUD Cideres Majalengka",
     tujuanLat: -6.782,
     tujuanLng: 108.214,
-    penumpangNama: 'Edrick Andreas',
-    penumpangEmail: 'edrick@gmail.com',
-    penumpangNoHp: '081298765432',
+    penumpangNama: "Edrick Andreas",
+    penumpangEmail: "edrick@gmail.com",
+    penumpangNoHp: "081298765432",
     jarakKm: 8.8,
     durasiMenit: 28,
     tarif: 33490,
@@ -985,7 +1104,7 @@ if (!store.orders.has(1001)) {
     totalBayar: 50490,
     tip: 20000,
     simulationProgress: 100,
-    routeGeometry: '[]',
+    routeGeometry: "[]",
     driverId: 1,
     dismissedByDriver: true,
     dismissedByPassenger: true,
@@ -997,17 +1116,17 @@ if (!store.orders.has(1001)) {
 if (!store.orders.has(1016)) {
   store.orders.set(1016, {
     id: 1016,
-    kode: 'ORD-20261108-849',
-    status: 'SELESAI',
-    jemputAlamat: 'Alun-Alun Majalengka & Masjid Agung Al-Imam',
+    kode: "ORD-20261108-849",
+    status: "SELESAI",
+    jemputAlamat: "Alun-Alun Majalengka & Masjid Agung Al-Imam",
     jemputLat: -6.8362,
     jemputLng: 108.2281,
-    tujuanAlamat: 'Bunderan Munjul & Tugu Bola Dunia',
+    tujuanAlamat: "Bunderan Munjul & Tugu Bola Dunia",
     tujuanLat: -6.8295,
     tujuanLng: 108.2198,
-    penumpangNama: 'Edrick Andreas',
-    penumpangEmail: 'edrick@gmail.com',
-    penumpangNoHp: '081298765432',
+    penumpangNama: "Edrick Andreas",
+    penumpangEmail: "edrick@gmail.com",
+    penumpangNoHp: "081298765432",
     jarakKm: 1.6,
     durasiMenit: 8,
     tarif: 9800,
@@ -1015,13 +1134,13 @@ if (!store.orders.has(1016)) {
     totalBayar: 29800,
     tip: 20000,
     simulationProgress: 100,
-    routeGeometry: '[]',
+    routeGeometry: "[]",
     driverId: 1,
     dismissedByDriver: true,
     dismissedByPassenger: true,
     countedInStats: true,
     countedTip: 20000,
-    createdAt: '2026-11-08T12:58:00.000Z',
+    createdAt: "2026-11-08T12:58:00.000Z",
   });
 }
 if (!store.chatMessages) {
@@ -1039,7 +1158,7 @@ store.ratings = normalizeAndSortRatings(store.ratings);
 const maxExistingOrderId = Math.max(
   1000,
   ...Array.from(store.orders.keys()),
-  ...store.ratings.map((r) => r.orderId)
+  ...store.ratings.map((r) => r.orderId),
 );
 if (!store.nextOrderId || store.nextOrderId <= maxExistingOrderId) {
   store.nextOrderId = maxExistingOrderId + 1;
@@ -1051,10 +1170,10 @@ if (!store.nextUserId) {
 if (!store.nextChatId) {
   store.nextChatId = 500;
 }
-if (typeof store.driverCompletedToday !== 'number') {
+if (typeof store.driverCompletedToday !== "number") {
   store.driverCompletedToday = 6;
 }
-if (typeof store.driverEarningsToday !== 'number') {
+if (typeof store.driverEarningsToday !== "number") {
   store.driverEarningsToday = 78000;
 }
 
@@ -1064,14 +1183,14 @@ function syncDriverOneToFleet() {
   const activeOrder = sharedStore.getActiveOrder(1);
   const isCurrentlyOnTrip = Boolean(
     activeOrder &&
-    activeOrder.status !== 'SELESAI' &&
-    activeOrder.status !== 'DIBATALKAN' &&
-    ['DITERIMA', 'DIJEMPUT', 'BERJALAN'].includes(activeOrder.status)
+    activeOrder.status !== "SELESAI" &&
+    activeOrder.status !== "DIBATALKAN" &&
+    ["DITERIMA", "DIJEMPUT", "BERJALAN"].includes(activeOrder.status),
   );
 
-  drv1.status = isCurrentlyOnTrip ? 'ON_TRIP' : 'ONLINE';
+  drv1.status = isCurrentlyOnTrip ? "ON_TRIP" : "ONLINE";
   if (!isCurrentlyOnTrip) {
-    store.driverStatus = 'ONLINE';
+    store.driverStatus = "ONLINE";
   }
   drv1.trips = store.driverTotalTrips;
   drv1.completedToday = store.driverCompletedToday;
@@ -1079,7 +1198,7 @@ function syncDriverOneToFleet() {
   const extraEarnings = Math.max(0, store.driverEarningsToday - 78000);
   drv1.income = 448000 + extraEarnings;
   const driver1Tips = store.ratings
-    .filter((r) => r.unit === 'BL-001' || r.driverNama.includes('Budi'))
+    .filter((r) => r.unit === "BL-001" || r.driverNama.includes("Budi"))
     .reduce((acc, r) => acc + (r.tip || 0), 0);
   drv1.tipsReceived = Math.max(31000, driver1Tips);
 
@@ -1110,7 +1229,7 @@ function ensureRouteCoords(order: SharedOrder): LatLng[] {
     order.jemputLat,
     order.jemputLng,
     order.tujuanLat,
-    order.tujuanLng
+    order.tujuanLng,
   );
   order.routeGeometry = JSON.stringify(fallback);
   return fallback;
@@ -1123,33 +1242,36 @@ export const sharedStore = {
       kode: string;
       jemputAlamat: string;
       tujuanAlamat: string;
-    }
+    },
   ): SharedOrder {
     const uniqueFallbackId = (Math.floor(Date.now() / 1000) % 900000) + 100000;
-    const id = data.id && Number.isInteger(data.id) ? data.id : Math.max(store.nextOrderId++, uniqueFallbackId);
+    const id =
+      data.id && Number.isInteger(data.id)
+        ? data.id
+        : Math.max(store.nextOrderId++, uniqueFallbackId);
     store.nextOrderId = id + 1;
     store.chatMessages.set(id, []);
 
     for (const old of store.orders.values()) {
-      if (old.status === 'SELESAI' || old.status === 'DIBATALKAN') {
+      if (old.status === "SELESAI" || old.status === "DIBATALKAN") {
         old.dismissedByDriver = true;
         old.dismissedByPassenger = true;
       }
     }
     let routeGeom = data.routeGeometry;
-    if (!routeGeom || routeGeom === '[]') {
+    if (!routeGeom || routeGeom === "[]") {
       const coords = generateRoadCorridorFallback(
         data.jemputLat ?? -6.8362,
         data.jemputLng ?? 108.2281,
         data.tujuanLat ?? -6.8295,
-        data.tujuanLng ?? 108.2198
+        data.tujuanLng ?? 108.2198,
       );
       routeGeom = JSON.stringify(coords);
     }
     const order: SharedOrder = {
       id,
       kode: data.kode,
-      status: data.status || 'MENCARI_DRIVER',
+      status: data.status || "MENCARI_DRIVER",
       jemputAlamat: data.jemputAlamat,
       jemputLat: Number(data.jemputLat ?? -6.8362),
       jemputLng: Number(data.jemputLng ?? 108.2281),
@@ -1162,34 +1284,40 @@ export const sharedStore = {
       diskon: Number(data.diskon ?? 0),
       tip: Number(data.tip ?? 0),
       totalBayar: Number(data.totalBayar ?? 12000),
-      serviceType: data.serviceType || 'REGULER',
+      serviceType: data.serviceType || "REGULER",
       passengerCount: data.passengerCount || 1,
       catatan: data.catatan,
-      metodePembayaran: data.metodePembayaran || 'QRIS',
+      metodePembayaran: data.metodePembayaran || "QRIS",
       simulationProgress: Number(data.simulationProgress ?? 0),
       routeGeometry: routeGeom,
-      penumpangNama: data.penumpangNama || 'Rina Kusuma',
-      penumpangEmail: data.penumpangEmail || 'rina@becak.test',
-      penumpangNoHp: data.penumpangNoHp || '081234567890',
+      penumpangNama: data.penumpangNama || "Rina Kusuma",
+      penumpangEmail: data.penumpangEmail || "rina@becak.test",
+      penumpangNoHp: data.penumpangNoHp || "081234567890",
       driverId: data.driverId || null,
-      driver: data.driver || (data.driverId
-        ? {
-            id: data.driverId,
-            ratingAverage: 4.95,
-            totalTrips: 63,
-            currentLat: Number(data.jemputLat ?? -6.8362),
-            currentLng: Number(data.jemputLng ?? 108.2281),
-            heading: 90,
-            user: { id: data.driverId, nama: 'Budi Santoso', noHp: '081234560001' },
-            vehicle: {
-              kodeUnit: 'BL-001',
-              modelName: 'Becak Listrik Majalengka EV',
-              warna: 'Biru Langit',
-              kapasitas: 2,
-              batteryPct: 94,
-            },
-          }
-        : null),
+      driver:
+        data.driver ||
+        (data.driverId
+          ? {
+              id: data.driverId,
+              ratingAverage: 4.95,
+              totalTrips: 63,
+              currentLat: Number(data.jemputLat ?? -6.8362),
+              currentLng: Number(data.jemputLng ?? 108.2281),
+              heading: 90,
+              user: {
+                id: data.driverId,
+                nama: "Budi Santoso",
+                noHp: "081234560001",
+              },
+              vehicle: {
+                kodeUnit: "BL-001",
+                modelName: "Becak Listrik Majalengka EV",
+                warna: "Biru Langit",
+                kapasitas: 2,
+                batteryPct: 94,
+              },
+            }
+          : null),
       createdAt: data.createdAt || new Date().toISOString(),
     };
     store.orders.set(id, order);
@@ -1206,7 +1334,11 @@ export const sharedStore = {
       return o;
     }
     for (const o of store.orders.values()) {
-      if (o.id === numId || String(o.id) === String(id) || o.kode === String(id)) {
+      if (
+        o.id === numId ||
+        String(o.id) === String(id) ||
+        o.kode === String(id)
+      ) {
         ensureRouteCoords(o);
         return o;
       }
@@ -1222,7 +1354,7 @@ export const sharedStore = {
   getIncomingOrders(): SharedOrder[] {
     const incoming: SharedOrder[] = [];
     for (const order of store.orders.values()) {
-      if (order.status === 'MENCARI_DRIVER' && !order.dismissedByDriver) {
+      if (order.status === "MENCARI_DRIVER" && !order.dismissedByDriver) {
         ensureRouteCoords(order);
         incoming.push(order);
       }
@@ -1232,15 +1364,17 @@ export const sharedStore = {
 
   // Mendapatkan order aktif yang sedang dijalankan oleh Driver (DITERIMA / DIJEMPUT / BERJALAN / SELESAI sebelum di-dismiss)
   getActiveOrder(driverId = 1): SharedOrder | null {
-    const allOrders = Array.from(store.orders.values()).sort((a, b) => b.id - a.id);
+    const allOrders = Array.from(store.orders.values()).sort(
+      (a, b) => b.id - a.id,
+    );
     for (const order of allOrders) {
       if (
         !order.dismissedByDriver &&
         (order.driverId === driverId || order.driverId == null) &&
-        (order.status === 'DITERIMA' ||
-          order.status === 'DIJEMPUT' ||
-          order.status === 'BERJALAN' ||
-          order.status === 'SELESAI')
+        (order.status === "DITERIMA" ||
+          order.status === "DIJEMPUT" ||
+          order.status === "BERJALAN" ||
+          order.status === "SELESAI")
       ) {
         ensureRouteCoords(order);
         return order;
@@ -1256,12 +1390,12 @@ export const sharedStore = {
       if (ord) ord.dismissedByDriver = true;
     } else {
       for (const ord of store.orders.values()) {
-        if (ord.status === 'SELESAI' || ord.status === 'DIBATALKAN') {
+        if (ord.status === "SELESAI" || ord.status === "DIBATALKAN") {
           ord.dismissedByDriver = true;
         }
       }
     }
-    store.driverStatus = 'ONLINE';
+    store.driverStatus = "ONLINE";
     syncDriverOneToFleet();
     savePersistedCache(store);
   },
@@ -1276,7 +1410,7 @@ export const sharedStore = {
       if (ord) ord.dismissedByPassenger = true;
     } else {
       for (const ord of store.orders.values()) {
-        if (ord.status === 'SELESAI' || ord.status === 'DIBATALKAN') {
+        if (ord.status === "SELESAI" || ord.status === "DIBATALKAN") {
           ord.dismissedByPassenger = true;
         }
       }
@@ -1288,10 +1422,10 @@ export const sharedStore = {
   cancelOrder(orderId: number): SharedOrder | null {
     const order = this.getOrder(orderId);
     if (!order) return null;
-    order.status = 'DIBATALKAN';
+    order.status = "DIBATALKAN";
     order.dismissedByDriver = true;
     order.dismissedByPassenger = true;
-    store.driverStatus = 'ONLINE';
+    store.driverStatus = "ONLINE";
     store.orders.set(order.id, order);
     syncDriverOneToFleet();
     savePersistedCache(store);
@@ -1299,7 +1433,11 @@ export const sharedStore = {
   },
 
   // Driver Menerima Order (Transisi MENCARI_DRIVER -> DITERIMA)
-  acceptOrder(orderId: number, driverId = 1, fallbackData?: Partial<SharedOrder>): SharedOrder | null {
+  acceptOrder(
+    orderId: number,
+    driverId = 1,
+    fallbackData?: Partial<SharedOrder>,
+  ): SharedOrder | null {
     let order = store.orders.get(orderId);
     if (!order) {
       for (const o of store.orders.values()) {
@@ -1313,27 +1451,27 @@ export const sharedStore = {
       order = {
         id: Number(orderId),
         kode: fallbackData.kode || `ORD-${orderId}`,
-        status: 'MENCARI_DRIVER',
-        jemputAlamat: fallbackData.jemputAlamat || 'Titik Jemput Majalengka',
+        status: "MENCARI_DRIVER",
+        jemputAlamat: fallbackData.jemputAlamat || "Titik Jemput Majalengka",
         jemputLat: Number(fallbackData.jemputLat) || -6.8362,
         jemputLng: Number(fallbackData.jemputLng) || 108.2281,
-        tujuanAlamat: fallbackData.tujuanAlamat || 'Tujuan Majalengka',
+        tujuanAlamat: fallbackData.tujuanAlamat || "Tujuan Majalengka",
         tujuanLat: Number(fallbackData.tujuanLat) || -6.8295,
         tujuanLng: Number(fallbackData.tujuanLng) || 108.2198,
-        penumpangNama: fallbackData.penumpangNama || 'Penumpang',
-        penumpangEmail: fallbackData.penumpangEmail || 'penumpang@becak.test',
-        penumpangNoHp: fallbackData.penumpangNoHp || '081298765432',
+        penumpangNama: fallbackData.penumpangNama || "Penumpang",
+        penumpangEmail: fallbackData.penumpangEmail || "penumpang@becak.test",
+        penumpangNoHp: fallbackData.penumpangNoHp || "081298765432",
         jarakKm: Number(fallbackData.jarakKm) || 2.5,
         durasiMenit: Number(fallbackData.durasiMenit) || 10,
         tarif: Number(fallbackData.tarif) || 10000,
         diskon: Number(fallbackData.diskon) || 0,
         totalBayar: Number(fallbackData.totalBayar) || 10000,
-        serviceType: fallbackData.serviceType || 'REGULER',
+        serviceType: fallbackData.serviceType || "REGULER",
         passengerCount: fallbackData.passengerCount || 1,
         catatan: fallbackData.catatan,
-        metodePembayaran: fallbackData.metodePembayaran || 'QRIS',
+        metodePembayaran: fallbackData.metodePembayaran || "QRIS",
         simulationProgress: 5,
-        routeGeometry: fallbackData.routeGeometry || '[]',
+        routeGeometry: fallbackData.routeGeometry || "[]",
         driverId: driverId,
         createdAt: fallbackData.createdAt || new Date().toISOString(),
       };
@@ -1346,7 +1484,10 @@ export const sharedStore = {
     if (!order) return null;
 
     for (const other of store.orders.values()) {
-      if (other.id !== order.id && (other.status === 'SELESAI' || other.status === 'MENCARI_DRIVER')) {
+      if (
+        other.id !== order.id &&
+        (other.status === "SELESAI" || other.status === "MENCARI_DRIVER")
+      ) {
         other.dismissedByDriver = true;
       }
     }
@@ -1355,20 +1496,20 @@ export const sharedStore = {
     const approachRoute = generatePickupApproachRoute(
       order.jemputLat,
       order.jemputLng,
-      routeCoords[1]
+      routeCoords[1],
     );
     const startInterp = interpolateRoutePosition(approachRoute, 0);
 
-    order.status = 'DITERIMA';
+    order.status = "DITERIMA";
     order.driverId = driverId;
     order.dismissedByDriver = false;
     order.dismissedByPassenger = false;
     order.simulationProgress = 0;
     order.lastStepAt = Date.now();
     const defaultVehicle = {
-      kodeUnit: 'BL-001',
-      modelName: 'Becak Listrik Majalengka EV',
-      warna: 'Biru Langit',
+      kodeUnit: "BL-001",
+      modelName: "Becak Listrik Majalengka EV",
+      warna: "Biru Langit",
       kapasitas: 2,
       batteryPct: 94,
     };
@@ -1380,10 +1521,10 @@ export const sharedStore = {
       heading: startInterp.heading,
       ratingAverage: store.driverRating,
       totalTrips: store.driverTotalTrips,
-      user: { id: 2, nama: 'Budi Santoso', noHp: '081234560001' },
+      user: { id: 2, nama: "Budi Santoso", noHp: "081234560001" },
       vehicle: defaultVehicle,
     };
-    store.driverStatus = 'ON_TRIP';
+    store.driverStatus = "ON_TRIP";
     store.orders.set(order.id, order);
 
     const existingChats = store.chatMessages.get(order.id) || [];
@@ -1392,10 +1533,10 @@ export const sharedStore = {
         {
           id: store.nextChatId++,
           orderId: order.id,
-          senderRole: 'DRIVER',
+          senderRole: "DRIVER",
           senderId: 2,
-          senderNama: 'Budi Santoso (Driver BL-001)',
-          pesan: `Halo Kak ${order.penumpangNama || 'Penumpang'}, pesanan menuju ${order.tujuanAlamat} sudah saya terima! Saya sedang meluncur ke titik jemput ya.`,
+          senderNama: "Budi Santoso (Driver BL-001)",
+          pesan: `Halo Kak ${order.penumpangNama || "Penumpang"}, pesanan menuju ${order.tujuanAlamat} sudah saya terima! Saya sedang meluncur ke titik jemput ya.`,
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -1407,19 +1548,25 @@ export const sharedStore = {
   },
 
   // Mesin Langkah Simulasi Terpadu (Sinkron 100% antara Pelanggan, Driver & Admin)
-  stepOrder(orderId: number, deltaPercent = 2, forceAdvance = false): SharedOrder | null {
+  stepOrder(
+    orderId: number,
+    deltaPercent = 2,
+    forceAdvance = false,
+  ): SharedOrder | null {
     const order = this.getOrder(orderId);
     if (!order) return null;
 
     const coords = ensureRouteCoords(order);
     const lastPos: LatLng =
-      coords.length > 0 ? coords[coords.length - 1] : [order.tujuanLat, order.tujuanLng];
+      coords.length > 0
+        ? coords[coords.length - 1]
+        : [order.tujuanLat, order.tujuanLng];
 
-    if (order.status === 'SELESAI' || deltaPercent >= 100) {
-      return this.updateOrderProgress(order.id, 100, 'SELESAI', lastPos, 0);
+    if (order.status === "SELESAI" || deltaPercent >= 100) {
+      return this.updateOrderProgress(order.id, 100, "SELESAI", lastPos, 0);
     }
 
-    if (order.status === 'MENCARI_DRIVER' || order.status === 'DIBATALKAN') {
+    if (order.status === "MENCARI_DRIVER" || order.status === "DIBATALKAN") {
       return order;
     }
 
@@ -1434,22 +1581,22 @@ export const sharedStore = {
     const nextProg = Math.min(100, currentProg + step);
 
     if (nextProg >= 100) {
-      return this.updateOrderProgress(order.id, 100, 'SELESAI', lastPos, 0);
+      return this.updateOrderProgress(order.id, 100, "SELESAI", lastPos, 0);
     }
 
     if (nextProg < 15) {
       // 0 - 15%: Driver bersiap di titik jemput (tepat di awal rute jalan)
-      const startPos: LatLng = coords.length > 0 ? coords[0] : [order.jemputLat, order.jemputLng];
-      const startHeading = coords.length > 1
-        ? interpolateRoutePosition(coords, 0).heading
-        : 90;
-      const approachStatus = nextProg < 8 ? 'DITERIMA' : 'DIJEMPUT';
+      const startPos: LatLng =
+        coords.length > 0 ? coords[0] : [order.jemputLat, order.jemputLng];
+      const startHeading =
+        coords.length > 1 ? interpolateRoutePosition(coords, 0).heading : 90;
+      const approachStatus = nextProg < 8 ? "DITERIMA" : "DIJEMPUT";
       return this.updateOrderProgress(
         order.id,
         nextProg,
         approachStatus,
         startPos,
-        startHeading
+        startHeading,
       );
     }
 
@@ -1459,14 +1606,20 @@ export const sharedStore = {
     return this.updateOrderProgress(
       order.id,
       nextProg,
-      'BERJALAN',
+      "BERJALAN",
       interp.position,
-      interp.heading
+      interp.heading,
     );
   },
 
   // Update Progres & Status Perjalanan
-  updateOrderProgress(orderId: number, progress: number, status: SharedOrder['status'], location?: [number, number], heading?: number): SharedOrder | null {
+  updateOrderProgress(
+    orderId: number,
+    progress: number,
+    status: SharedOrder["status"],
+    location?: [number, number],
+    heading?: number,
+  ): SharedOrder | null {
     let order = store.orders.get(orderId);
     if (!order) {
       for (const o of store.orders.values()) {
@@ -1478,22 +1631,31 @@ export const sharedStore = {
     }
     if (!order) return null;
 
-    if (order.status === 'SELESAI' && status !== 'SELESAI') {
+    if (order.status === "SELESAI" && status !== "SELESAI") {
       return order;
     }
 
-    order.simulationProgress = Math.max(order.simulationProgress || 0, progress);
+    order.simulationProgress = Math.max(
+      order.simulationProgress || 0,
+      progress,
+    );
 
-    const statusPriority = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+    const statusPriority = [
+      "MENCARI_DRIVER",
+      "DITERIMA",
+      "DIJEMPUT",
+      "BERJALAN",
+      "SELESAI",
+    ];
     const currentIdx = statusPriority.indexOf(order.status);
     const targetIdx = statusPriority.indexOf(status);
     if (targetIdx >= currentIdx) {
       order.status = status;
     }
     const defaultVehicle = {
-      kodeUnit: 'BL-001',
-      modelName: 'Becak Listrik Majalengka EV',
-      warna: 'Biru Langit',
+      kodeUnit: "BL-001",
+      modelName: "Becak Listrik Majalengka EV",
+      warna: "Biru Langit",
       kapasitas: 2,
       batteryPct: 94,
     };
@@ -1508,7 +1670,7 @@ export const sharedStore = {
         heading: heading ?? 0,
         ratingAverage: store.driverRating,
         totalTrips: store.driverTotalTrips,
-        user: { id: 2, nama: 'Budi Santoso', noHp: '081234560001' },
+        user: { id: 2, nama: "Budi Santoso", noHp: "081234560001" },
         vehicle: order.vehicle || defaultVehicle,
       };
     } else if (location) {
@@ -1517,9 +1679,9 @@ export const sharedStore = {
       if (heading != null) order.driver.heading = heading;
     }
 
-    if (status === 'SELESAI') {
+    if (status === "SELESAI") {
       order.simulationProgress = 100;
-      store.driverStatus = 'ONLINE';
+      store.driverStatus = "ONLINE";
       if (!order.countedInStats) {
         order.countedInStats = true;
         store.driverTotalTrips += 1;
@@ -1542,15 +1704,16 @@ export const sharedStore = {
     komentar: string,
     tip?: number,
     timestamp?: number,
-    customPassengerName?: string
+    customPassengerName?: string,
   ): SharedRating {
     const order = store.orders.get(orderId) || this.getActiveOrder();
     const finalPassengerNama =
       (customPassengerName && customPassengerName.trim()) ||
       (order?.penumpangNama && order.penumpangNama.trim()) ||
-      'Edrick';
-    const cleanTip = typeof tip === 'number' && tip >= 0 ? tip : 0;
-    const now = typeof timestamp === 'number' && timestamp > 0 ? timestamp : Date.now();
+      "Edrick";
+    const cleanTip = typeof tip === "number" && tip >= 0 ? tip : 0;
+    const now =
+      typeof timestamp === "number" && timestamp > 0 ? timestamp : Date.now();
 
     if (order) {
       const baseTotal = Math.max(0, order.tarif - (order.diskon || 0));
@@ -1559,7 +1722,7 @@ export const sharedStore = {
       order.tip = cleanTip;
       order.countedTip = cleanTip;
       order.totalBayar = Math.max(0, baseTotal + cleanTip);
-      order.status = 'SELESAI';
+      order.status = "SELESAI";
       order.simulationProgress = 100;
       order.penumpangNama = finalPassengerNama;
       if (!order.countedInStats) {
@@ -1569,23 +1732,28 @@ export const sharedStore = {
         store.driverEarningsToday += baseTotal;
       }
       if (tipDelta !== 0) {
-        store.driverEarningsToday = Math.max(0, store.driverEarningsToday + tipDelta);
+        store.driverEarningsToday = Math.max(
+          0,
+          store.driverEarningsToday + tipDelta,
+        );
       }
       store.orders.set(order.id, order);
     }
 
     const existingIdx = store.ratings.findIndex((r) => r.orderId === orderId);
-    const ruteText = order ? `${order.jemputAlamat} ➔ ${order.tujuanAlamat}` : undefined;
+    const ruteText = order
+      ? `${order.jemputAlamat} ➔ ${order.tujuanAlamat}`
+      : undefined;
 
     const rating: SharedRating = {
       id: existingIdx >= 0 ? store.ratings[existingIdx].id : now,
       orderId,
       penumpangNama: finalPassengerNama,
-      driverNama: 'Budi Santoso',
-      unit: 'BL-001',
+      driverNama: "Budi Santoso",
+      unit: "BL-001",
       skor,
-      kategori: kategori || 'Sangat Memuaskan',
-      komentar: komentar || 'Pelayanan becak listrik yang sangat nyaman.',
+      kategori: kategori || "Sangat Memuaskan",
+      komentar: komentar || "Pelayanan becak listrik yang sangat nyaman.",
       tip: cleanTip,
       rute: ruteText,
       createdAt: formatDynamicReviewTime(now, Date.now()),
@@ -1596,10 +1764,21 @@ export const sharedStore = {
       store.ratings[existingIdx] = rating;
     } else {
       store.ratings.unshift(rating);
-      const budiRatings = store.ratings.filter((r) => r.unit === 'BL-001');
+      const budiRatings = store.ratings.filter((r) => r.unit === "BL-001");
       const avg =
-        budiRatings.reduce((acc, r) => acc + r.skor, 0) / Math.max(1, budiRatings.length);
-      store.driverRating = Math.round(Math.min(5, Math.max(4.8, (4.95 * 38 + avg * budiRatings.length) / (38 + budiRatings.length))) * 100) / 100;
+        budiRatings.reduce((acc, r) => acc + r.skor, 0) /
+        Math.max(1, budiRatings.length);
+      store.driverRating =
+        Math.round(
+          Math.min(
+            5,
+            Math.max(
+              4.8,
+              (4.95 * 38 + avg * budiRatings.length) /
+                (38 + budiRatings.length),
+            ),
+          ) * 100,
+        ) / 100;
     }
 
     store.ratings = sortRatingsNewestFirst(store.ratings);
@@ -1621,32 +1800,32 @@ export const sharedStore = {
       if (t.id <= 1016) continue;
 
       const defaultTripNames: Record<number, string> = {
-        1016: 'Edrick',
-        1015: 'Rina Kusuma',
-        1014: 'Rina Kusuma',
-        1013: 'Edrick',
-        1012: 'Edrick',
-        1011: 'Wowo',
-        1010: 'Khalil',
-        1009: 'Edrick Andreas',
-        1001: 'Edrick Andreas',
+        1016: "Edrick",
+        1015: "Rina Kusuma",
+        1014: "Rina Kusuma",
+        1013: "Edrick",
+        1012: "Edrick",
+        1011: "Wowo",
+        1010: "Khalil",
+        1009: "Edrick Andreas",
+        1001: "Edrick Andreas",
       };
 
       const passengerName =
         (t.penumpangNama && t.penumpangNama.trim()) ||
         defaultTripNames[t.id] ||
         store.orders.get(t.id)?.penumpangNama ||
-        'Edrick';
+        "Edrick";
       const passengerEmail =
         t.penumpangEmail ||
         store.orders.get(t.id)?.penumpangEmail ||
-        'edrick@gmail.com';
+        "edrick@gmail.com";
 
       const existingRatingIdx = store.ratings.findIndex(
-        (r) => r.orderId === t.id || r.id === t.id
+        (r) => r.orderId === t.id || r.id === t.id,
       );
       const itemTs =
-        typeof t.timestamp === 'number' && t.timestamp > 0
+        typeof t.timestamp === "number" && t.timestamp > 0
           ? t.timestamp
           : parseRatingTimestamp({ createdAt: t.tanggal, orderId: t.id }, now);
       const dynamicCreatedAt = formatDynamicReviewTime(itemTs, now);
@@ -1654,11 +1833,11 @@ export const sharedStore = {
         id: t.id,
         orderId: t.id,
         penumpangNama: passengerName,
-        driverNama: t.driverNama || 'Budi Santoso',
-        unit: t.driverUnit || 'BL-001',
+        driverNama: t.driverNama || "Budi Santoso",
+        unit: t.driverUnit || "BL-001",
         skor: t.ratingScore || 5,
-        kategori: t.ratingCategory || 'Tepat Waktu & Hening',
-        komentar: t.ratingComment || 'Perjalanan nyaman dan bebas polusi.',
+        kategori: t.ratingCategory || "Tepat Waktu & Hening",
+        komentar: t.ratingComment || "Perjalanan nyaman dan bebas polusi.",
         tip: t.tip || 0,
         rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
         createdAt: dynamicCreatedAt,
@@ -1671,7 +1850,9 @@ export const sharedStore = {
       } else {
         const existingRev = store.ratings[existingRatingIdx];
         const keepName =
-          t.penumpangNama && t.penumpangNama.trim() && t.penumpangNama !== 'Pelanggan BecakListrik'
+          t.penumpangNama &&
+          t.penumpangNama.trim() &&
+          t.penumpangNama !== "Pelanggan BecakListrik"
             ? t.penumpangNama
             : existingRev.penumpangNama || passengerName;
 
@@ -1694,7 +1875,7 @@ export const sharedStore = {
           store.orders.set(t.id, {
             id: t.id,
             kode: t.kode || `ORD-${t.id}`,
-            status: 'SELESAI',
+            status: "SELESAI",
             jemputAlamat: t.jemputAlamat,
             jemputLat: -6.8362,
             jemputLng: 108.2281,
@@ -1703,7 +1884,7 @@ export const sharedStore = {
             tujuanLng: 108.2305,
             penumpangNama: passengerName,
             penumpangEmail: passengerEmail,
-            penumpangNoHp: '081298765432',
+            penumpangNoHp: "081298765432",
             jarakKm: t.jarakKm || 1.5,
             durasiMenit: t.durasiMenit || 8,
             tarif: t.tarif || 9500,
@@ -1711,7 +1892,7 @@ export const sharedStore = {
             totalBayar: t.totalBayar || 9500,
             tip: t.tip || 0,
             simulationProgress: 100,
-            routeGeometry: '[]',
+            routeGeometry: "[]",
             driverId: 1,
             dismissedByDriver: true,
             dismissedByPassenger: true,
@@ -1744,13 +1925,15 @@ export const sharedStore = {
       rute?: string;
       createdAt: string;
       timestamp: number;
-    }>
+    }>,
   ): void {
     if (!Array.isArray(dbRatings) || dbRatings.length === 0) return;
     let changed = false;
     const now = Date.now();
     for (const dr of dbRatings) {
-      const exists = store.ratings.some((r) => r.orderId === dr.orderId || r.id === dr.id);
+      const exists = store.ratings.some(
+        (r) => r.orderId === dr.orderId || r.id === dr.id,
+      );
       if (!exists) {
         store.ratings.unshift({
           id: dr.id,
@@ -1758,12 +1941,12 @@ export const sharedStore = {
           penumpangNama:
             store.orders.get(dr.orderId)?.penumpangNama ||
             dr.penumpangNama ||
-            'Pelanggan BecakListrik',
-          driverNama: 'Budi Santoso',
-          unit: 'BL-001',
+            "Pelanggan BecakListrik",
+          driverNama: "Budi Santoso",
+          unit: "BL-001",
           skor: dr.skor || 5,
-          kategori: dr.kategori || 'Sangat Memuaskan',
-          komentar: dr.komentar || 'Perjalanan hening dan nyaman.',
+          kategori: dr.kategori || "Sangat Memuaskan",
+          komentar: dr.komentar || "Perjalanan hening dan nyaman.",
           tip: dr.tip || 0,
           rute: dr.rute,
           createdAt: formatDynamicReviewTime(dr.timestamp, now),
@@ -1783,30 +1966,73 @@ export const sharedStore = {
   getChatMessages(orderId: number): SharedChatMessage[] {
     const numId = Number(orderId);
     if (!numId) return [];
-    return store.chatMessages.get(numId) || [];
+    let list = store.chatMessages.get(numId);
+    if (!list || list.length === 0) {
+      if (numId === 1016) {
+        list = [
+          {
+            id: 1794142680001,
+            orderId: 1016,
+            senderRole: 'DRIVER',
+            senderId: 2,
+            senderNama: 'Budi Santoso (Driver BL-001)',
+            pesan:
+              'Halo Kak Edrick, pesanan menuju Bunderan Munjul & Tugu Bola Dunia sudah saya terima! Saya sedang meluncur ke titik jemput ya.',
+            createdAt: '2026-11-08T12:58:00.000Z',
+          },
+          {
+            id: 1794142740001,
+            orderId: 1016,
+            senderRole: 'DRIVER',
+            senderId: 2,
+            senderNama: 'Budi Santoso (Driver BL-001)',
+            pesan: 'gimana',
+            createdAt: '2026-11-08T12:59:00.000Z',
+          },
+        ];
+        store.chatMessages.set(1016, list);
+      } else {
+        list = [];
+      }
+    }
+    return list;
   },
 
   addChatMessage(
     orderId: number,
     data: {
-      senderRole: 'PENUMPANG' | 'DRIVER' | 'ADMIN';
+      id?: number;
+      senderRole: "PENUMPANG" | "DRIVER" | "ADMIN";
       senderId?: number;
       senderNama: string;
       pesan: string;
-    }
+      createdAt?: string;
+    },
   ): SharedChatMessage {
     const numId = Number(orderId);
-    const list = store.chatMessages.get(numId) || [];
+    const list = this.getChatMessages(numId);
+    const uniqueId =
+      typeof data.id === 'number' && data.id > 0
+        ? data.id
+        : Date.now() * 1000 + Math.floor(Math.random() * 1000);
+
     const newMsg: SharedChatMessage = {
-      id: store.nextChatId++,
+      id: uniqueId,
       orderId: numId,
       senderRole: data.senderRole,
       senderId: data.senderId,
       senderNama: data.senderNama,
       pesan: data.pesan.trim().slice(0, 500),
-      createdAt: new Date().toISOString(),
+      createdAt: data.createdAt || new Date().toISOString(),
     };
-    list.push(newMsg);
+
+    const existingIdx = list.findIndex((m) => m.id === newMsg.id);
+    if (existingIdx >= 0) {
+      list[existingIdx] = newMsg;
+    } else {
+      list.push(newMsg);
+    }
+
     store.chatMessages.set(numId, list);
     savePersistedCache(store);
 
@@ -1825,8 +2051,8 @@ export const sharedStore = {
     const budiReviews = store.ratings.filter(
       (r) =>
         !r.unit ||
-        r.unit.toUpperCase() === 'BL-001' ||
-        (r.driverNama && r.driverNama.toLowerCase().includes('budi'))
+        r.unit.toUpperCase() === "BL-001" ||
+        (r.driverNama && r.driverNama.toLowerCase().includes("budi")),
     );
     return {
       rating: store.driverRating,
@@ -1840,7 +2066,7 @@ export const sharedStore = {
   getDriverStats(): {
     completedToday: number;
     earningsToday: number;
-    status: 'ONLINE' | 'OFFLINE' | 'ON_TRIP';
+    status: "ONLINE" | "OFFLINE" | "ON_TRIP";
   } {
     syncDriverOneToFleet();
     return {
@@ -1850,12 +2076,12 @@ export const sharedStore = {
     };
   },
 
-  getDriverStatus(): 'ONLINE' | 'OFFLINE' | 'ON_TRIP' {
+  getDriverStatus(): "ONLINE" | "OFFLINE" | "ON_TRIP" {
     return store.driverStatus;
   },
 
   // Set Status Online / Offline Driver Utama
-  setDriverStatus(status: 'ONLINE' | 'OFFLINE' | 'ON_TRIP'): void {
+  setDriverStatus(status: "ONLINE" | "OFFLINE" | "ON_TRIP"): void {
     store.driverStatus = status;
     syncDriverOneToFleet();
     savePersistedCache(store);
@@ -1871,52 +2097,59 @@ export const sharedStore = {
       const tripsNorm = Math.min(1, d.trips / maxTrips) * 30; // 30% bobot jumlah perjalanan
       const onTimeNorm = (d.onTimeRate / 100) * 15; // 15% bobot ketepatan waktu
       const ecoNorm = (d.ecoScore / 100) * 10; // 10% bobot efisiensi baterai
-      const performanceScore = Math.round((ratingNorm + tripsNorm + onTimeNorm + ecoNorm) * 10) / 10;
+      const performanceScore =
+        Math.round((ratingNorm + tripsNorm + onTimeNorm + ecoNorm) * 10) / 10;
       return {
         ...d,
         performanceScore,
-        statusLabel: (d.status === 'ONLINE'
-          ? 'Online'
-          : d.status === 'ON_TRIP'
-          ? 'Dalam perjalanan'
-          : 'Offline') as RankedFleetDriver['statusLabel'],
+        statusLabel: (d.status === "ONLINE"
+          ? "Online"
+          : d.status === "ON_TRIP"
+            ? "Dalam perjalanan"
+            : "Offline") as RankedFleetDriver["statusLabel"],
       };
     });
 
     scored.sort((a, b) => {
-      if (b.performanceScore !== a.performanceScore) return b.performanceScore - a.performanceScore;
+      if (b.performanceScore !== a.performanceScore)
+        return b.performanceScore - a.performanceScore;
       if (b.trips !== a.trips) return b.trips - a.trips;
       return b.income - a.income;
     });
 
     const badges = [
-      '🏆 Peringkat 1 · Driver Terbaik',
-      '🥈 Peringkat 2 · Driver Unggulan',
-      '🥉 Peringkat 3 · Driver Teladan',
-      '⭐ Driver Aktif',
-      '⚡ Driver Aktif',
-      '🛡️ Driver Pangkalan',
+      "🏆 Peringkat 1 · Driver Terbaik",
+      "🥈 Peringkat 2 · Driver Unggulan",
+      "🥉 Peringkat 3 · Driver Teladan",
+      "⭐ Driver Aktif",
+      "⚡ Driver Aktif",
+      "🛡️ Driver Pangkalan",
     ];
 
     return scored.map((d, index) => ({
       ...d,
       rank: index + 1,
-      badge: badges[index] || '🛡️ Driver Pangkalan',
+      badge: badges[index] || "🛡️ Driver Pangkalan",
     }));
   },
 
   // Tambah Driver Baru dari Dashboard Admin
-  addFleetDriver(data: { nama: string; email: string; noHp?: string; kodeUnit: string }): RankedFleetDriver {
+  addFleetDriver(data: {
+    nama: string;
+    email: string;
+    noHp?: string;
+    kodeUnit: string;
+  }): RankedFleetDriver {
     const nextRawId =
       store.fleetDrivers.reduce((max, d) => Math.max(max, d.rawId), 0) + 1;
     const newDrv: SharedFleetDriver = {
       rawId: nextRawId,
-      id: `DRV-${String(nextRawId).padStart(3, '0')}`,
+      id: `DRV-${String(nextRawId).padStart(3, "0")}`,
       nama: data.nama.trim(),
       email: data.email.trim().toLowerCase(),
       noHp: data.noHp?.trim() || `08123456000${nextRawId}`,
       unit: data.kodeUnit.trim().toUpperCase(),
-      status: 'ONLINE',
+      status: "ONLINE",
       battery: 95,
       trips: 12,
       completedToday: 2,
@@ -1925,7 +2158,7 @@ export const sharedStore = {
       rating: 4.9,
       onTimeRate: 97,
       ecoScore: 96,
-      koridor: 'Alun-Alun · Pusat Kota Majalengka',
+      koridor: "Alun-Alun · Pusat Kota Majalengka",
       lat: -6.8362 + (nextRawId % 5) * 0.0012,
       lng: 108.2281 + (nextRawId % 4) * 0.0012,
       heading: (nextRawId * 60) % 360,
@@ -1933,11 +2166,16 @@ export const sharedStore = {
     store.fleetDrivers.push(newDrv);
     savePersistedCache(store);
     const ranked = this.getFleetDrivers();
-    return ranked.find((r) => r.rawId === nextRawId) || ranked[ranked.length - 1];
+    return (
+      ranked.find((r) => r.rawId === nextRawId) || ranked[ranked.length - 1]
+    );
   },
 
   // Ubah Status Online/Offline Driver dari Dashboard Admin
-  setFleetDriverStatus(rawId: number, status: 'ONLINE' | 'OFFLINE' | 'ON_TRIP'): SharedFleetDriver | null {
+  setFleetDriverStatus(
+    rawId: number,
+    status: "ONLINE" | "OFFLINE" | "ON_TRIP",
+  ): SharedFleetDriver | null {
     if (rawId === 1) {
       store.driverStatus = status;
     }
@@ -1953,24 +2191,48 @@ export const sharedStore = {
   // Statistik Real-Time Lengkap untuk Dashboard Admin
   getAdminLiveStats() {
     const rankedDrivers = this.getFleetDrivers();
-    const allLiveOrders = Array.from(store.orders.values()).sort((a, b) => b.id - a.id);
+    const allLiveOrders = Array.from(store.orders.values()).sort(
+      (a, b) => b.id - a.id,
+    );
 
     const activeRuntimeOrders = allLiveOrders.filter((o) =>
-      ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN'].includes(o.status)
+      ["MENCARI_DRIVER", "DITERIMA", "DIJEMPUT", "BERJALAN"].includes(o.status),
     );
-    const completedRuntimeOrders = allLiveOrders.filter((o) => o.status === 'SELESAI');
-    const cancelledRuntimeOrders = allLiveOrders.filter((o) => o.status === 'DIBATALKAN');
+    const completedRuntimeOrders = allLiveOrders.filter(
+      (o) => o.status === "SELESAI",
+    );
+    const cancelledRuntimeOrders = allLiveOrders.filter(
+      (o) => o.status === "DIBATALKAN",
+    );
 
     const totalTripsFleet = rankedDrivers.reduce((acc, d) => acc + d.trips, 0);
-    const totalTodayFleet = rankedDrivers.reduce((acc, d) => acc + d.completedToday, 0);
-    const totalIncomeFleet = rankedDrivers.reduce((acc, d) => acc + d.income, 0);
-    const totalTipsFleet = rankedDrivers.reduce((acc, d) => acc + d.tipsReceived, 0);
+    const totalTodayFleet = rankedDrivers.reduce(
+      (acc, d) => acc + d.completedToday,
+      0,
+    );
+    const totalIncomeFleet = rankedDrivers.reduce(
+      (acc, d) => acc + d.income,
+      0,
+    );
+    const totalTipsFleet = rankedDrivers.reduce(
+      (acc, d) => acc + d.tipsReceived,
+      0,
+    );
 
-    const onlineCount = rankedDrivers.filter((d) => d.status === 'ONLINE').length;
-    const onTripCount = rankedDrivers.filter((d) => d.status === 'ON_TRIP').length;
-    const offlineCount = rankedDrivers.filter((d) => d.status === 'OFFLINE').length;
+    const onlineCount = rankedDrivers.filter(
+      (d) => d.status === "ONLINE",
+    ).length;
+    const onTripCount = rankedDrivers.filter(
+      (d) => d.status === "ON_TRIP",
+    ).length;
+    const offlineCount = rankedDrivers.filter(
+      (d) => d.status === "OFFLINE",
+    ).length;
 
-    const extraKm = completedRuntimeOrders.reduce((acc, o) => acc + (o.jarakKm || 1.6), 0);
+    const extraKm = completedRuntimeOrders.reduce(
+      (acc, o) => acc + (o.jarakKm || 1.6),
+      0,
+    );
     const totalKm = Math.round((284.5 + extraKm) * 10) / 10;
     const ecoMetrics = calculateEcoImpact(totalKm, totalTripsFleet);
 
@@ -1978,15 +2240,15 @@ export const sharedStore = {
       175000 + Math.max(0, store.driverEarningsToday - 78000);
 
     const trend = [
-      { d: 'Kam', date: 'Hari -6', count: 24, revenue: 235000 },
-      { d: 'Jum', date: 'Hari -5', count: 31, revenue: 310000 },
-      { d: 'Sab', date: 'Hari -4', count: 42, revenue: 425000 },
-      { d: 'Min', date: 'Hari -3', count: 46, revenue: 468000 },
-      { d: 'Sen', date: 'Hari -2', count: 28, revenue: 282000 },
-      { d: 'Sel', date: 'Kemarin', count: 35, revenue: 355000 },
+      { d: "Kam", date: "Hari -6", count: 24, revenue: 235000 },
+      { d: "Jum", date: "Hari -5", count: 31, revenue: 310000 },
+      { d: "Sab", date: "Hari -4", count: 42, revenue: 425000 },
+      { d: "Min", date: "Hari -3", count: 46, revenue: 468000 },
+      { d: "Sen", date: "Hari -2", count: 28, revenue: 282000 },
+      { d: "Sel", date: "Kemarin", count: 35, revenue: 355000 },
       {
-        d: 'Hari Ini',
-        date: 'Hari Ini',
+        d: "Hari Ini",
+        date: "Hari Ini",
         count: totalTodayFleet,
         revenue: todayRevenue,
       },
@@ -1996,7 +2258,10 @@ export const sharedStore = {
 
     return {
       orders: {
-        total: totalTripsFleet + activeRuntimeOrders.length + cancelledRuntimeOrders.length,
+        total:
+          totalTripsFleet +
+          activeRuntimeOrders.length +
+          cancelledRuntimeOrders.length,
         today: totalTodayFleet + activeRuntimeOrders.length,
         active: activeRuntimeOrders.length,
         completed: totalTripsFleet,
@@ -2036,8 +2301,8 @@ export const sharedStore = {
       rankedDrivers,
       pangkalan: {
         id: 1,
-        nama: 'Pangkalan Becak Listrik Alun-Alun Majalengka',
-        alamat: 'Kawasan Alun-Alun Jl. KH Abdul Halim, Majalengka',
+        nama: "Pangkalan Becak Listrik Alun-Alun Majalengka",
+        alamat: "Kawasan Alun-Alun Jl. KH Abdul Halim, Majalengka",
         lat: -6.8362,
         lng: 108.2281,
         radiusKm: 4.2,
@@ -2051,7 +2316,7 @@ export const sharedStore = {
     email: string;
     noHp: string;
     password: string;
-    role?: 'PENUMPANG' | 'DRIVER' | 'ADMIN';
+    role?: "PENUMPANG" | "DRIVER" | "ADMIN";
   }): SharedRegisteredUser {
     const cleanEmail = data.email.trim().toLowerCase();
     const existing = store.registeredUsers.get(cleanEmail);
@@ -2066,9 +2331,9 @@ export const sharedStore = {
       id: store.nextUserId++,
       nama: data.nama.trim(),
       email: cleanEmail,
-      noHp: data.noHp.trim() || '081200000000',
+      noHp: data.noHp.trim() || "081200000000",
       password: data.password,
-      role: data.role || 'PENUMPANG',
+      role: data.role || "PENUMPANG",
       createdAt: new Date().toISOString(),
     };
     store.registeredUsers.set(cleanEmail, newUser);
@@ -2091,7 +2356,7 @@ export const sharedStore = {
     store.ratings = sortRatingsNewestFirst([...INITIAL_RATINGS]);
     store.fleetDrivers = INITIAL_FLEET_DRIVERS.map((d) => ({ ...d }));
     store.syncedHistoryIds = new Set<number>([990, 991]);
-    store.driverStatus = 'ONLINE';
+    store.driverStatus = "ONLINE";
     store.driverRating = 4.95;
     store.driverTotalTrips = 48;
     store.driverCompletedToday = 6;

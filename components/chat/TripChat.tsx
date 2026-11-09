@@ -34,6 +34,26 @@ const quickMessagesDriver = [
   '👍 Siap, saya tunggu di sini',
 ];
 
+const DEFAULT_1016_MESSAGES: ChatMessage[] = [
+  {
+    id: 1794142680001,
+    orderId: 1016,
+    senderRole: 'DRIVER',
+    senderNama: 'Budi Santoso (Driver BL-001)',
+    pesan:
+      'Halo Kak Edrick, pesanan menuju Bunderan Munjul & Tugu Bola Dunia sudah saya terima! Saya sedang meluncur ke titik jemput ya.',
+    createdAt: '2026-11-08T12:58:00.000Z',
+  },
+  {
+    id: 1794142740001,
+    orderId: 1016,
+    senderRole: 'DRIVER',
+    senderNama: 'Budi Santoso (Driver BL-001)',
+    pesan: 'gimana',
+    createdAt: '2026-11-08T12:59:00.000Z',
+  },
+];
+
 export default function TripChat({
   orderId,
   orderCode,
@@ -51,12 +71,13 @@ export default function TripChat({
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.filter((m: ChatMessage) => m && m.orderId === orderId);
+            const filtered = parsed.filter((m: ChatMessage) => m && m.orderId === orderId);
+            if (filtered.length > 0) return filtered;
           }
         }
       } catch {}
     }
-    return [];
+    return orderId === 1016 ? [...DEFAULT_1016_MESSAGES] : [];
   });
 
   // Reset and load clean isolated chat when orderId changes
@@ -67,13 +88,16 @@ export default function TripChat({
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            setMessages(parsed.filter((m: ChatMessage) => m && m.orderId === orderId));
-            return;
+            const filtered = parsed.filter((m: ChatMessage) => m && m.orderId === orderId);
+            if (filtered.length > 0) {
+              setMessages(filtered);
+              return;
+            }
           }
         }
       } catch {}
     }
-    setMessages([]);
+    setMessages(orderId === 1016 ? [...DEFAULT_1016_MESSAGES] : []);
   }, [orderId]);
 
   const [inputText, setInputText] = useState('');
@@ -82,51 +106,46 @@ export default function TripChat({
   const isInitialMount = useRef(true);
 
   // Helper to deduplicate and sort messages strictly for current orderId
-  const mergeMessages = useCallback((prevList: ChatMessage[], incomingList: ChatMessage[]): ChatMessage[] => {
-    const list = [...prevList];
+  const mergeMessages = useCallback(
+    (prevList: ChatMessage[], incomingList: ChatMessage[]): { changed: boolean; list: ChatMessage[] } => {
+      const map = new Map<number, ChatMessage>();
 
-    for (const inc of incomingList) {
-      if (!inc || !inc.pesan || inc.orderId !== orderId) continue;
-
-      // 1. Cek apakah ada pesan dengan ID server yang sama persis
-      const exactIdx = list.findIndex((m) => m.id === inc.id);
-      if (exactIdx >= 0) {
-        list[exactIdx] = inc;
-        continue;
+      // Masukkan pesan yang sudah ada
+      for (const m of prevList) {
+        if (m && m.orderId === orderId) {
+          map.set(m.id, m);
+        }
       }
 
-      // 2. Cek apakah ada pesan optimistik lokal (id > 1_000_000_000_000) yang cocok (pesan & role sama dalam rentang 30 detik)
-      const optimisticIdx = list.findIndex(
-        (m) =>
-          m.id > 1_000_000_000_000 &&
-          m.senderRole === inc.senderRole &&
-          m.pesan.trim() === inc.pesan.trim() &&
-          Math.abs(new Date(m.createdAt).getTime() - new Date(inc.createdAt).getTime()) < 30_000
-      );
+      let changed = false;
 
-      if (optimisticIdx >= 0) {
-        // Gantikan pesan optimistik sementara dengan pesan resmi dari server
-        list[optimisticIdx] = inc;
-      } else {
-        // Pesan baru yang belum ada di daftar
-        list.push(inc);
+      // Masukkan pesan yang masuk
+      for (const inc of incomingList) {
+        if (!inc || !inc.pesan || inc.orderId !== orderId) continue;
+        const existing = map.get(inc.id);
+        if (!existing) {
+          map.set(inc.id, inc);
+          changed = true;
+        } else if (existing.pesan !== inc.pesan || existing.senderNama !== inc.senderNama) {
+          map.set(inc.id, inc);
+          changed = true;
+        }
       }
-    }
 
-    // Sort strictly by createdAt / id
-    const sorted = list.sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || a.id - b.id
-    );
+      if (!changed) {
+        return { changed: false, list: prevList };
+      }
 
-    // Simpan salinan terbaru ke localStorage khusus orderId ini
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(sorted));
-      } catch {}
-    }
+      const sorted = Array.from(map.values()).sort((a, b) => {
+        const timeDiff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        if (timeDiff !== 0 && !isNaN(timeDiff)) return timeDiff;
+        return a.id - b.id;
+      });
 
-    return sorted;
-  }, [orderId, storageKey]);
+      return { changed: true, list: sorted };
+    },
+    [orderId]
+  );
 
   // 1. Sinkronisasi Antar Tab (Driver <-> Penumpang) via BroadcastChannel
   useEffect(() => {
@@ -139,7 +158,14 @@ export default function TripChat({
         if (event.data?.type === 'NEW_CHAT' && event.data.message) {
           const incoming: ChatMessage = event.data.message;
           if (incoming && incoming.orderId === orderId) {
-            setMessages((prev) => mergeMessages(prev, [incoming]));
+            setMessages((prev) => {
+              const { changed, list } = mergeMessages(prev, [incoming]);
+              if (!changed) return prev;
+              try {
+                localStorage.setItem(storageKey, JSON.stringify(list));
+              } catch {}
+              return list;
+            });
           }
         }
       };
@@ -147,23 +173,8 @@ export default function TripChat({
       // BroadcastChannel tidak didukung di beberapa webview lama
     }
 
-    // Storage Event fallback untuk sinkronisasi antar-tab
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === storageKey && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (Array.isArray(parsed)) {
-            const filtered = parsed.filter((m: ChatMessage) => m && m.orderId === orderId);
-            setMessages((prev) => mergeMessages(prev, filtered));
-          }
-        } catch {}
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-
     return () => {
       if (bc) bc.close();
-      window.removeEventListener('storage', handleStorage);
     };
   }, [orderId, storageKey, mergeMessages]);
 
@@ -179,7 +190,14 @@ export default function TripChat({
         const data = await res.json();
         if (isMounted && Array.isArray(data.messages)) {
           const orderMessages = data.messages.filter((m: ChatMessage) => m && m.orderId === orderId);
-          setMessages((prev) => mergeMessages(prev, orderMessages));
+          setMessages((prev) => {
+            const { changed, list } = mergeMessages(prev, orderMessages);
+            if (!changed) return prev; // Mencegah re-render yang tidak perlu
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(list));
+            } catch {}
+            return list;
+          });
         }
       } catch {
         // Abaikan offline / error sementara
@@ -187,13 +205,13 @@ export default function TripChat({
     }
 
     void fetchMessages();
-    const interval = setInterval(fetchMessages, 1000);
+    const interval = setInterval(fetchMessages, 1500);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [orderId, mergeMessages]);
+  }, [orderId, storageKey, mergeMessages]);
 
   // 3. Scroll halus ke pesan terbawah setiap ada pesan baru
   useEffect(() => {
@@ -215,17 +233,26 @@ export default function TripChat({
 
     if (!textToSend) setInputText('');
 
+    const msgId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    const nowIso = new Date().toISOString();
+
     const optimisticMessage: ChatMessage = {
-      id: Date.now(),
+      id: msgId,
       orderId,
       senderRole: currentUserRole,
       senderNama: currentUserName,
       pesan: text,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
     };
 
     // a. Langsung tampil di layar (0ms latency)
-    setMessages((prev) => mergeMessages(prev, [optimisticMessage]));
+    setMessages((prev) => {
+      const { list } = mergeMessages(prev, [optimisticMessage]);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(list));
+      } catch {}
+      return list;
+    });
 
     // b. Broadcast ke tab lain (Pelanggan <-> Driver)
     try {
@@ -240,15 +267,24 @@ export default function TripChat({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: msgId,
           pesan: text,
           senderRole: currentUserRole,
           senderNama: currentUserName,
           senderId: currentUserId,
+          createdAt: nowIso,
         }),
       });
       const data = await res.json();
       if (data.success && data.message) {
-        setMessages((prev) => mergeMessages(prev, [data.message]));
+        setMessages((prev) => {
+          const { changed, list } = mergeMessages(prev, [data.message]);
+          if (!changed) return prev;
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(list));
+          } catch {}
+          return list;
+        });
       }
     } catch (err) {
       console.warn('Chat server sync notice:', err);
@@ -417,10 +453,18 @@ export default function TripChat({
         ) : (
           messages.map((msg, index) => {
             const isMe = msg.senderRole === currentUserRole;
-            const timeStr = new Date(msg.createdAt).toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
+            const timeStr = (() => {
+              try {
+                const d = new Date(msg.createdAt);
+                if (!isNaN(d.getTime())) {
+                  return d.toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                }
+              } catch {}
+              return 'Baru saja';
+            })();
 
             return (
               <div
