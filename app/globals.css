@@ -3505,6 +3505,20 @@ td:first-child {
   min-height: 52px;
 }
 
+.stage-topbar-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-traffic-action-btn {
+  display: none;
+}
+
+.ctrl-btn-desktop-traffic {
+  display: inline-flex;
+}
+
 .telemetry-item {
   display: flex;
   align-items: center;
@@ -3570,6 +3584,11 @@ td:first-child {
   background: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
+}
+
+.becak-unit-secondary,
+.becak-unit-primary {
+  display: block;
 }
 
 /* STAGE VIEWPORT & ATMOSPHERE MODES */
@@ -4989,49 +5008,108 @@ td:first-child {
     border-radius: 16px;
   }
   .stage-topbar {
-    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px;
     gap: 8px;
+    min-height: auto;
+  }
+  .stage-topbar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
   }
   .telemetry-badges {
-    display: none;
+    display: none !important;
+  }
+  .mobile-traffic-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+  .ctrl-btn-desktop-traffic {
+    display: none !important;
   }
   .stage-controls {
     width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    overflow-x: visible;
+    padding-bottom: 0;
   }
   .stage-controls .ctrl-btn {
-    padding: 5px 8px;
+    flex: 1 1 0px;
+    padding: 6px 4px;
     font-size: 11px;
     white-space: nowrap;
+    text-align: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .stage-controls .ctrl-btn svg {
     flex-shrink: 0;
   }
   .stage-viewport {
     height: 310px;
   }
+  /* On Mobile: Single Magnificent Hero Becak (No awkward cut-off follower) */
+  .becak-unit-secondary {
+    display: none !important;
+  }
   .becak-position-wrap {
-    bottom: 20px;
-    transform: translateX(-68%) scale(0.58);
-    transform-origin: bottom center;
+    width: 254px !important;
+    height: 167px !important;
+    left: 50% !important;
+    bottom: 22px !important;
+    transform: translateX(-56%) scale(0.80) !important;
+    transform-origin: bottom center !important;
+  }
+  .becak-unit-primary {
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+  }
+  .headlight-beam {
+    width: 130px !important;
+    height: 42px !important;
+    opacity: 0.85 !important;
   }
   .roadside-intersection-group {
-    left: calc(50% + 68px);
+    left: calc(50% + 72px) !important;
   }
   .intersection-traffic-light {
-    left: 8px;
-    bottom: 64px;
-    transform: scale(0.70);
-    transform-origin: bottom left;
+    left: 8px !important;
+    bottom: 58px !important;
+    transform: scale(0.72) !important;
+    transform-origin: bottom left !important;
   }
   .traffic-signpost-plate {
-    font-size: 8px;
-    padding: 2px 5px;
-    max-width: 82px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 7.5px !important;
+    padding: 2px 5px !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+  .intersection-stop-line {
+    left: 0 !important;
+    bottom: 4px !important;
+    width: 7px !important;
+    height: 58px !important;
   }
   .floating-badge {
     display: none !important;
@@ -5049,32 +5127,49 @@ td:first-child {
 
 @media (max-width: 420px) {
   .stage-viewport {
-    height: 285px;
+    height: 295px;
   }
   .becak-position-wrap {
-    bottom: 16px;
-    transform: translateX(-70%) scale(0.50);
-    transform-origin: bottom center;
+    transform: translateX(-58%) scale(0.74) !important;
+    bottom: 20px !important;
+  }
+  .headlight-beam {
+    width: 110px !important;
+    height: 38px !important;
   }
   .roadside-intersection-group {
-    left: calc(50% + 48px);
+    left: calc(50% + 56px) !important;
   }
   .intersection-traffic-light {
-    left: 6px;
-    bottom: 58px;
-    transform: scale(0.60);
-    transform-origin: bottom left;
+    left: 6px !important;
+    bottom: 54px !important;
+    transform: scale(0.66) !important;
   }
   .traffic-signpost-plate {
-    font-size: 7.5px;
-    padding: 1px 4px;
-    max-width: 72px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 7px !important;
+    padding: 1.5px 4px !important;
+  }
+  .stage-controls .ctrl-btn {
+    padding: 5px 3px !important;
+    font-size: 10.5px !important;
+    gap: 3px !important;
   }
   .floating-badge {
     display: none !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .stage-viewport {
+    height: 280px;
+  }
+  .becak-position-wrap {
+    transform: translateX(-60%) scale(0.68) !important;
+    bottom: 18px !important;
+  }
+  .stage-controls .ctrl-btn {
+    padding: 5px 2px !important;
+    font-size: 10px !important;
   }
 }
 

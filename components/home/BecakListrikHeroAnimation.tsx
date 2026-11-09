@@ -452,50 +452,84 @@ export function BecakListrikHeroAnimation() {
         <div className="becak-stage-card">
           {/* Stage Top Bar: Telemetry Info & Traffic Signal Badge */}
           <div className="stage-topbar">
-            <div className="telemetry-item">
-              <span className="live-indicator-dot" />
-              <strong>SIMULASI SISTEM AKTIF</strong>
-            </div>
+            <div className="stage-topbar-header">
+              <div className="telemetry-item">
+                <span className="live-indicator-dot" />
+                <strong>SIMULASI SISTEM AKTIF</strong>
+              </div>
 
-            <div className="telemetry-badges">
-              {/* Interactive Traffic Light Signal Badge */}
+              <div className="telemetry-badges">
+                {/* Interactive Traffic Light Signal Badge */}
+                <button
+                  type="button"
+                  className={`traffic-status-badge ${
+                    signalLight === 'RED'
+                      ? 'status-badge-red'
+                      : signalLight === 'YELLOW'
+                      ? 'status-badge-yellow'
+                      : 'status-badge-green'
+                  }`}
+                  onClick={handleTogglePlayPause}
+                  title="Klik untuk simulasi mendekati simpang / lanjut jalan"
+                >
+                  <span
+                    className={
+                      signalLight === 'RED'
+                        ? 'traffic-dot-red-pulse'
+                        : signalLight === 'YELLOW'
+                        ? 'traffic-dot-yellow-pulse'
+                        : 'traffic-dot-green-pulse'
+                    }
+                  />
+                  <span>
+                    {simState === 'cruising' &&
+                      intersectionPhase === 'hidden' &&
+                      '🟢 JALUR UTAMA BEBAS'}
+                    {simState === 'braking' &&
+                      '🛑 LAMPU MERAH (MENGEREM)'}
+                    {simState === 'stopped' &&
+                      '🛑 LAMPU MERAH (BERHENTI)'}
+                    {simState === 'accelerating' &&
+                      '🟢 LAMPU HIJAU (MELAJU)'}
+                  </span>
+                </button>
+
+                <span className="telemetry-pill">
+                  <BatteryCharging size={14} /> Baterai 96%
+                </span>
+              </div>
+
+              {/* Mobile Dedicated Traffic Toggle Action (Prominent & Easy To Tap) */}
               <button
                 type="button"
-                className={`traffic-status-badge ${
-                  signalLight === 'RED'
-                    ? 'status-badge-red'
-                    : signalLight === 'YELLOW'
-                    ? 'status-badge-yellow'
-                    : 'status-badge-green'
+                className={`mobile-traffic-action-btn ${
+                  simState === 'stopped'
+                    ? 'ctrl-btn-green'
+                    : simState === 'braking'
+                    ? 'ctrl-btn-yellow'
+                    : 'ctrl-btn-red'
                 }`}
                 onClick={handleTogglePlayPause}
-                title="Klik untuk simulasi mendekati simpang / lanjut jalan"
+                title={
+                  simState === 'cruising' || simState === 'accelerating'
+                    ? 'Jeda (Mendekati Simpang & Lampu Merah)'
+                    : 'Nyalakan Lampu Hijau & Meluncur Kembali'
+                }
               >
-                <span
-                  className={
-                    signalLight === 'RED'
-                      ? 'traffic-dot-red-pulse'
-                      : signalLight === 'YELLOW'
-                      ? 'traffic-dot-yellow-pulse'
-                      : 'traffic-dot-green-pulse'
-                  }
-                />
-                <span>
-                  {simState === 'cruising' &&
-                    intersectionPhase === 'hidden' &&
-                    '🟢 JALUR UTAMA BEBAS'}
-                  {simState === 'braking' &&
-                    '🛑 LAMPU MERAH (MENGEREM)'}
-                  {simState === 'stopped' &&
-                    '🛑 LAMPU MERAH (BERHENTI)'}
-                  {simState === 'accelerating' &&
-                    '🟢 LAMPU HIJAU (MELAJU)'}
-                </span>
+                {simState === 'cruising' ? (
+                  <>
+                    <Pause size={13} /> 🛑 Jeda Simpang
+                  </>
+                ) : simState === 'braking' ? (
+                  <>
+                    <Pause size={13} /> ⚠️ Mengerem...
+                  </>
+                ) : (
+                  <>
+                    <Play size={13} /> 🟢 Lanjut Jalan
+                  </>
+                )}
               </button>
-
-              <span className="telemetry-pill">
-                <BatteryCharging size={14} /> Baterai 96%
-              </span>
             </div>
 
             {/* Stage Controls */}
@@ -557,7 +591,7 @@ export function BecakListrikHeroAnimation() {
                 }}
               >
                 <Bell size={15} className={hornRinging ? 'icon-pulse' : ''} />
-                {hornRinging ? 'Kring-kring! 🔔' : 'Klakson Becak'}
+                {hornRinging ? 'Kring-kring! 🔔' : 'Klakson'}
               </button>
 
               {/* Headlight Toggle */}
@@ -580,10 +614,10 @@ export function BecakListrikHeroAnimation() {
                 ⚡ {speedMultiplier === 1 ? '1x Laju' : '2x Cepat'}
               </button>
 
-              {/* Traffic Light Pause / Resume Button */}
+              {/* Traffic Light Pause / Resume Button (Desktop) */}
               <button
                 type="button"
-                className={`ctrl-btn ${
+                className={`ctrl-btn ctrl-btn-desktop-traffic ${
                   simState === 'stopped'
                     ? 'ctrl-btn-green'
                     : simState === 'braking'
@@ -1355,6 +1389,7 @@ export function BecakListrikHeroAnimation() {
                     widthPx: 248,
                     heightPx: 163,
                     bobDelay: '0s',
+                    unitClass: 'becak-unit-secondary',
                   },
                   {
                     unitCode: 'BL-01',
@@ -1364,13 +1399,14 @@ export function BecakListrikHeroAnimation() {
                     widthPx: 254,
                     heightPx: 167,
                     bobDelay: '-0.75s',
+                    unitClass: 'becak-unit-primary',
                   },
                 ].map((unit) => {
                   const palette = PASSENGER_SHIRT_PALETTES[shirtPaletteIdx];
                   return (
                   <div
                     key={unit.unitCode}
-                    className="becak-chassis-wrap becak-unit-gliding"
+                    className={`becak-chassis-wrap becak-unit-gliding ${unit.unitClass}`}
                     onClick={handleKlakson}
                     title="Klik bodi becak untuk membunyikan klakson!"
                     style={{
