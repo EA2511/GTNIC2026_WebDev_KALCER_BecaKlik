@@ -712,6 +712,11 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
     const seed = seedMap.get(orderId);
     const orderTs = getLinkedOrderTimestamp(orderId);
 
+    const isLiveUserRating =
+      (typeof r.timestamp === "number" && r.timestamp > 1794142680000) ||
+      (Boolean(r.komentar) && Boolean(seed) && r.komentar !== seed?.komentar) ||
+      (Boolean(r.skor) && Boolean(seed) && r.skor !== seed?.skor);
+
     let ts =
       orderTs ||
       (typeof r.timestamp === "number" &&
@@ -720,27 +725,31 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
         ? r.timestamp
         : seed?.timestamp || parseRatingTimestamp(r, now));
 
-    if (orderId === 1016) {
-      ts = 1794142680000;
-    }
-    if (orderId === 1001) {
-      ts = Date.UTC(2026, 10, 7, 9, 37, 0);
-    }
-    if (orderId === 1013) {
-      ts = 1794031800000;
-    }
-    if (orderId === 1012) {
-      ts = 1794029400000;
+    if (!isLiveUserRating) {
+      if (orderId === 1016) {
+        ts = 1794142680000;
+      }
+      if (orderId === 1001) {
+        ts = Date.UTC(2026, 10, 7, 9, 37, 0);
+      }
+      if (orderId === 1013) {
+        ts = 1794031800000;
+      }
+      if (orderId === 1012) {
+        ts = 1794029400000;
+      }
     }
 
     const dynamicCreatedAt = formatDynamicReviewTime(ts, now);
     const authorName =
-      orderId <= 1016 && seed?.penumpangNama
-        ? seed.penumpangNama
-        : r.penumpangNama || seed?.penumpangNama || "Edrick";
+      isLiveUserRating && r.penumpangNama
+        ? r.penumpangNama
+        : (orderId <= 1016 && seed?.penumpangNama
+          ? seed.penumpangNama
+          : r.penumpangNama || seed?.penumpangNama || "Edrick");
 
     const finalReview: SharedRating =
-      orderId <= 1016 && seed
+      orderId <= 1016 && seed && !isLiveUserRating
         ? {
             ...seed,
             createdAt: dynamicCreatedAt,
@@ -1796,8 +1805,11 @@ export const sharedStore = {
 
     for (const t of trips) {
       if (!t || !t.id) continue;
-      // Abaikan semua pesanan baseline (<= 1016) karena sudah dikunci permanen dengan data autentik
-      if (t.id <= 1016) continue;
+      const isUserRated =
+        typeof t.timestamp === "number" &&
+        t.timestamp > 1794142680000 &&
+        t.ratingScore > 0;
+      if (t.id < 1016 && !isUserRated) continue;
 
       const defaultTripNames: Record<number, string> = {
         1016: "Edrick",
@@ -2048,16 +2060,10 @@ export const sharedStore = {
   } {
     syncDriverOneToFleet();
     store.ratings = sortRatingsNewestFirst(store.ratings);
-    const budiReviews = store.ratings.filter(
-      (r) =>
-        !r.unit ||
-        r.unit.toUpperCase() === "BL-001" ||
-        (r.driverNama && r.driverNama.toLowerCase().includes("budi")),
-    );
     return {
       rating: store.driverRating,
       trips: store.driverTotalTrips,
-      reviews: budiReviews,
+      reviews: store.ratings,
       allReviews: store.ratings,
     };
   },

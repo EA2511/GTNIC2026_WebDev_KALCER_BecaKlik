@@ -129,7 +129,7 @@ export async function GET() {
       },
       activeOrder: sharedActiveOrder,
       incomingOrders: sharedIncoming,
-      recentReviews: ratingInfo.reviews,
+      recentReviews: ratingInfo.allReviews || ratingInfo.reviews,
       leaderboard: rankedFleet,
       stats: {
         completedToday: driverStats.completedToday,
@@ -155,7 +155,7 @@ export async function GET() {
       },
       activeOrder: null,
       incomingOrders: sharedStore.getIncomingOrders(),
-      recentReviews: ratingInfo.reviews,
+      recentReviews: ratingInfo.allReviews || ratingInfo.reviews,
       leaderboard: rankedFleet,
       stats: {
         completedToday: driverStats.completedToday,

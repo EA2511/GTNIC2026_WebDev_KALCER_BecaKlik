@@ -162,6 +162,8 @@ function getReviewTimestamp(rev: ReviewInfo, now: number = Date.now()): number {
   if (orderId === 1016) return 1794142680000;
   if (orderId === 1015) return 1794107089636;
   if (orderId === 1014) return 1794105866745;
+  if (orderId === 1013) return 1794031800000;
+  if (orderId === 1012) return 1794029400000;
   if (orderId === 1011) return 1794104070313;
   if (orderId === 1010) return 1794102562243;
   if (orderId === 1009) return 1794072652760;
@@ -170,10 +172,22 @@ function getReviewTimestamp(rev: ReviewInfo, now: number = Date.now()): number {
   if (orderId === 1006) return 1794067500000;
   if (orderId === 1005) return 1794066200000;
   if (orderId === 1004) return 1794064800000;
+  if (orderId === 1003) return 1794063600000;
+  if (orderId === 1002) return 1794061200000;
+  if (orderId === 1000) return 1794057600000;
   if (orderId === 1001) return 1794044220000; // 7 Nov 2026, 16:37 WIB (Kemarin)
   if (orderId === 991) return Date.UTC(2026, 10, 3, 7, 20, 0);
   if (orderId === 990) return Date.UTC(2026, 10, 2, 2, 45, 0);
   if (orderId === 989) return Date.UTC(2026, 10, 1, 8, 35, 0);
+  if (orderId === 988) return Date.UTC(2026, 9, 31, 3, 0, 0);
+  if (orderId === 987) return Date.UTC(2026, 9, 30, 4, 15, 0);
+  if (orderId === 986) return Date.UTC(2026, 9, 29, 6, 30, 0);
+  if (orderId === 985) return Date.UTC(2026, 9, 28, 7, 0, 0);
+  if (orderId === 984) return Date.UTC(2026, 9, 27, 8, 0, 0);
+  if (orderId === 983) return Date.UTC(2026, 9, 26, 9, 40, 0);
+  if (orderId === 982) return Date.UTC(2026, 9, 25, 7, 15, 0);
+  if (orderId === 981) return Date.UTC(2026, 9, 24, 3, 20, 0);
+  if (orderId === 980) return Date.UTC(2026, 9, 23, 10, 0, 0);
 
   const raw = (rev.createdAt || "").toLowerCase();
   if (raw.includes("menit lalu")) {
@@ -201,6 +215,7 @@ function formatReviewDynamicTime(
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
 
+  if (diffSec < 45) return "Baru saja";
   if (diffMin < 1) return "Baru saja";
   if (diffMin < 60) return `${diffMin} menit lalu`;
 
@@ -347,23 +362,28 @@ export default function DriverPage() {
 
     const syncTripsToState = (parsed: any[]) => {
       if (!Array.isArray(parsed) || parsed.length === 0) return;
-      const validNew = parsed.filter((t) => t && t.id > 1016);
-      if (validNew.length === 0) return;
-      const formattedReviews: ReviewInfo[] = validNew.map((t) => ({
-        id: t.id,
-        orderId: t.id,
-        penumpangNama: t.penumpangNama || "Edrick",
-        skor: t.ratingScore || 5,
-        kategori: t.ratingCategory || "Sangat Memuaskan",
-        komentar: t.ratingComment || "Perjalanan nyaman dan hening.",
-        tip: t.tip || 0,
-        rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
-        createdAt: t.tanggal || "Baru saja",
-        timestamp:
+      const valid = parsed.filter(
+        (t) => t && (t.ratingScore > 0 || (t.ratingComment && String(t.ratingComment).trim().length > 0))
+      );
+      if (valid.length === 0) return;
+      const formattedReviews: ReviewInfo[] = valid.map((t) => {
+        const itemTs =
           typeof t.timestamp === "number" && t.timestamp > 0
             ? t.timestamp
-            : Date.now(),
-      }));
+            : Date.now();
+        return {
+          id: t.id,
+          orderId: t.id,
+          penumpangNama: t.penumpangNama || "Edrick",
+          skor: t.ratingScore || 5,
+          kategori: t.ratingCategory || "Sangat Memuaskan",
+          komentar: t.ratingComment || "Perjalanan nyaman dan hening.",
+          tip: t.tip || 0,
+          rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
+          createdAt: "Baru saja",
+          timestamp: itemTs,
+        };
+      });
       setReviews((prev) => mergeReviews(prev, formattedReviews));
     };
 
@@ -693,7 +713,7 @@ export default function DriverPage() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentClientTime(Date.now());
-    }, 15000);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -3259,10 +3279,7 @@ export default function DriverPage() {
               gap: "16px",
             }}
           >
-            {(showAllReviews
-              ? sortedDriverReviews
-              : sortedDriverReviews.slice(0, 6)
-            ).map((rev) => (
+            {sortedDriverReviews.map((rev) => (
               <div
                 key={rev.orderId ? `ord-${rev.orderId}` : `id-${rev.id}`}
                 style={{
