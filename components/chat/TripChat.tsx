@@ -83,36 +83,49 @@ export default function TripChat({
 
   // Helper to deduplicate and sort messages strictly for current orderId
   const mergeMessages = useCallback((prevList: ChatMessage[], incomingList: ChatMessage[]): ChatMessage[] => {
-    const map = new Map<string, ChatMessage>();
+    const list = [...prevList];
 
-    // Masukkan pesan yang sudah ada khusus orderId ini
-    for (const m of prevList) {
-      if (!m || !m.pesan || m.orderId !== orderId) continue;
-      const key = `${m.id || ''}_${m.pesan}_${m.senderRole}`;
-      map.set(key, m);
-    }
+    for (const inc of incomingList) {
+      if (!inc || !inc.pesan || inc.orderId !== orderId) continue;
 
-    // Gabungkan pesan dari server / broadcast tanpa mencampur aduk order lain
-    for (const m of incomingList) {
-      if (!m || !m.pesan || m.orderId !== orderId) continue;
-      const key = `${m.id || ''}_${m.pesan}_${m.senderRole}`;
-      if (!map.has(key)) {
-        map.set(key, m);
+      // 1. Cek apakah ada pesan dengan ID server yang sama persis
+      const exactIdx = list.findIndex((m) => m.id === inc.id);
+      if (exactIdx >= 0) {
+        list[exactIdx] = inc;
+        continue;
+      }
+
+      // 2. Cek apakah ada pesan optimistik lokal (id > 1_000_000_000_000) yang cocok (pesan & role sama dalam rentang 30 detik)
+      const optimisticIdx = list.findIndex(
+        (m) =>
+          m.id > 1_000_000_000_000 &&
+          m.senderRole === inc.senderRole &&
+          m.pesan.trim() === inc.pesan.trim() &&
+          Math.abs(new Date(m.createdAt).getTime() - new Date(inc.createdAt).getTime()) < 30_000
+      );
+
+      if (optimisticIdx >= 0) {
+        // Gantikan pesan optimistik sementara dengan pesan resmi dari server
+        list[optimisticIdx] = inc;
+      } else {
+        // Pesan baru yang belum ada di daftar
+        list.push(inc);
       }
     }
 
-    const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    // Sort strictly by createdAt / id
+    const sorted = list.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || a.id - b.id
     );
 
     // Simpan salinan terbaru ke localStorage khusus orderId ini
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(storageKey, JSON.stringify(merged));
+        localStorage.setItem(storageKey, JSON.stringify(sorted));
       } catch {}
     }
 
-    return merged;
+    return sorted;
   }, [orderId, storageKey]);
 
   // 1. Sinkronisasi Antar Tab (Driver <-> Penumpang) via BroadcastChannel

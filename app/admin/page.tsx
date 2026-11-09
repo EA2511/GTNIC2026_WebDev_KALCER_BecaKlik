@@ -206,15 +206,15 @@ export default function AdminPage() {
         setReviews((prev) => {
           const incoming: AdminReview[] = driversJson.recentReviews;
           if (!prev || prev.length !== incoming.length) return incoming;
-          const isSame = prev.every((p, idx) => {
-            const inc = incoming[idx];
+          const prevMap = new Map((prev || []).map((p) => [p.orderId || p.id, p]));
+          const isSame = incoming.every((inc) => {
+            const p = prevMap.get(inc.orderId || inc.id);
             return (
-              inc &&
-              (inc.orderId || inc.id) === (p.orderId || p.id) &&
+              p &&
               inc.penumpangNama === p.penumpangNama &&
               inc.skor === p.skor &&
               inc.tip === p.tip &&
-              inc.createdAt === p.createdAt
+              inc.komentar === p.komentar
             );
           });
           return isSame ? prev : incoming;
@@ -267,15 +267,15 @@ export default function AdminPage() {
           setReviews((prev) => {
             const incoming: AdminReview[] = driversJson.recentReviews;
             if (!prev || prev.length !== incoming.length) return incoming;
-            const isSame = prev.every((p, idx) => {
-              const inc = incoming[idx];
+            const prevMap = new Map((prev || []).map((p) => [p.orderId || p.id, p]));
+            const isSame = incoming.every((inc) => {
+              const p = prevMap.get(inc.orderId || inc.id);
               return (
-                inc &&
-                (inc.orderId || inc.id) === (p.orderId || p.id) &&
+                p &&
                 inc.penumpangNama === p.penumpangNama &&
                 inc.skor === p.skor &&
                 inc.tip === p.tip &&
-                inc.createdAt === p.createdAt
+                inc.komentar === p.komentar
               );
             });
             return isSame ? prev : incoming;

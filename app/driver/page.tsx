@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   Bike,
@@ -151,7 +157,8 @@ function getReviewTimestamp(rev: ReviewInfo, now: number = Date.now()): number {
   if (typeof rev.timestamp === "number" && rev.timestamp > 1700000000000) {
     return rev.timestamp;
   }
-  const orderId = rev.orderId ?? (rev.id < 1_000_000_000_000 ? rev.id : undefined);
+  const orderId =
+    rev.orderId ?? (rev.id < 1_000_000_000_000 ? rev.id : undefined);
   if (orderId === 1016) return 1794142680000;
   if (orderId === 1015) return 1794107089636;
   if (orderId === 1014) return 1794105866745;
@@ -182,7 +189,10 @@ function getReviewTimestamp(rev: ReviewInfo, now: number = Date.now()): number {
   return 1700000000000 + (orderId || rev.id || 0);
 }
 
-function formatReviewDynamicTime(rev: ReviewInfo, now: number = Date.now()): string {
+function formatReviewDynamicTime(
+  rev: ReviewInfo,
+  now: number = Date.now(),
+): string {
   const ts = getReviewTimestamp(rev, now);
   if (!ts) return rev.createdAt || "Baru saja";
 
@@ -211,7 +221,9 @@ function formatReviewDynamicTime(rev: ReviewInfo, now: number = Date.now()): str
 
   const rDayTimestamp = Date.UTC(rYear, rMonth, rDate);
   const nDayTimestamp = Date.UTC(nYear, nMonth, nDate);
-  const calendarDaysDiff = Math.round((nDayTimestamp - rDayTimestamp) / (24 * 3600 * 1000));
+  const calendarDaysDiff = Math.round(
+    (nDayTimestamp - rDayTimestamp) / (24 * 3600 * 1000),
+  );
 
   if (calendarDaysDiff === 0) {
     if (diffHour < 4) return `${diffHour} jam lalu`;
@@ -224,11 +236,27 @@ function formatReviewDynamicTime(rev: ReviewInfo, now: number = Date.now()): str
     return `${calendarDaysDiff} hari lalu, ${timeStr}`;
   }
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
   return `${rDate} ${months[rMonth]} ${rYear}, ${timeStr}`;
 }
 
-function mergeReviews(prev: ReviewInfo[], incoming: ReviewInfo[]): ReviewInfo[] {
+function mergeReviews(
+  prev: ReviewInfo[],
+  incoming: ReviewInfo[],
+): ReviewInfo[] {
   if (!Array.isArray(incoming) || incoming.length === 0) return prev;
   const map = new Map<string, ReviewInfo>();
 
@@ -255,7 +283,10 @@ function mergeReviews(prev: ReviewInfo[], incoming: ReviewInfo[]): ReviewInfo[] 
       const key = getDedupeKey(r);
       const existing = map.get(key);
       if (existing) {
-        if (!existing.penumpangNama || existing.penumpangNama === "Pelanggan BecakListrik") {
+        if (
+          !existing.penumpangNama ||
+          existing.penumpangNama === "Pelanggan BecakListrik"
+        ) {
           existing.penumpangNama = r.penumpangNama || existing.penumpangNama;
         }
       } else {
@@ -310,39 +341,31 @@ export default function DriverPage() {
     }
   }, []);
 
-  // Sinkronkan riwayat perjalanan & ulasan real-time dari browser penumpang ke Driver
+  // Sinkronkan ulasan real-time baru dari penumpang ke Driver
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const syncTripsToState = (parsed: any[]) => {
       if (!Array.isArray(parsed) || parsed.length === 0) return;
-      const formattedReviews: ReviewInfo[] = parsed.map((t) => ({
+      const validNew = parsed.filter((t) => t && t.id > 1016);
+      if (validNew.length === 0) return;
+      const formattedReviews: ReviewInfo[] = validNew.map((t) => ({
         id: t.id,
         orderId: t.id,
-        penumpangNama: t.penumpangNama || "Penumpang",
+        penumpangNama: t.penumpangNama || "Edrick",
         skor: t.ratingScore || 5,
         kategori: t.ratingCategory || "Sangat Memuaskan",
         komentar: t.ratingComment || "Perjalanan nyaman dan hening.",
         tip: t.tip || 0,
         rute: `${t.jemputAlamat} ➔ ${t.tujuanAlamat}`,
         createdAt: t.tanggal || "Baru saja",
-        timestamp: typeof t.timestamp === "number" && t.timestamp > 0 ? t.timestamp : Date.now(),
+        timestamp:
+          typeof t.timestamp === "number" && t.timestamp > 0
+            ? t.timestamp
+            : Date.now(),
       }));
       setReviews((prev) => mergeReviews(prev, formattedReviews));
-      void fetch("/api/driver/active", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "SYNC_HISTORY", trips: parsed }),
-      }).catch(() => {});
     };
-
-    try {
-      const savedHistory = localStorage.getItem("becak_passenger_trip_history");
-      if (savedHistory) {
-        const parsed = JSON.parse(savedHistory);
-        syncTripsToState(parsed);
-      }
-    } catch {}
 
     let bc: BroadcastChannel | null = null;
     try {
@@ -351,7 +374,7 @@ export default function DriverPage() {
         if (event.data?.type === "NEW_RATING" && event.data.trip) {
           syncTripsToState([event.data.trip]);
           setAcceptNotification(
-            `⭐ Ulasan baru masuk (${event.data.trip.ratingScore || 5}★) dari ${event.data.trip.penumpangNama || "Penumpang"}!`
+            `⭐ Ulasan baru masuk (${event.data.trip.ratingScore || 5}★) dari ${event.data.trip.penumpangNama || "Edrick"}!`,
           );
         }
       };
@@ -401,7 +424,10 @@ export default function DriverPage() {
       !activeOrder.dismissedByDriver &&
       activeOrder.id !== dismissedOrderIdRef.current
     ) {
-      localStorage.setItem("becak_driver_active_order", JSON.stringify(activeOrder));
+      localStorage.setItem(
+        "becak_driver_active_order",
+        JSON.stringify(activeOrder),
+      );
     } else {
       localStorage.removeItem("becak_driver_active_order");
     }
@@ -415,7 +441,8 @@ export default function DriverPage() {
         penumpangNama: "Edrick",
         skor: 5,
         kategori: "Rute Cepat & Aman",
-        komentar: "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
+        komentar:
+          "Mantap pak Budi, perjalanan sangat nyaman, hening, dan cepat sampai!",
         tip: 20000,
         rute: "Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia",
         createdAt: "Hari ini, 19:58",
@@ -523,7 +550,8 @@ export default function DriverPage() {
         penumpangNama: "Edrick",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
-        komentar: "Perjalanan siang sangat nyaman, adem dan pak sopir ramah sekali!",
+        komentar:
+          "Perjalanan siang sangat nyaman, adem dan pak sopir ramah sekali!",
         tip: 10000,
         rute: "Universitas Majalengka (Kampus UNMA) ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam",
         createdAt: "Kemarin, 13:10",
@@ -535,7 +563,8 @@ export default function DriverPage() {
         penumpangNama: "Edrick",
         skor: 5,
         kategori: "Rute Cepat & Aman",
-        komentar: "Becak listrik terbaik di Majalengka, cepat dan bebas polusi!",
+        komentar:
+          "Becak listrik terbaik di Majalengka, cepat dan bebas polusi!",
         tip: 15000,
         rute: "Pasar Mambo Kuliner Majalengka ➔ Bunderan Munjul & Tugu Bola Dunia",
         createdAt: "Kemarin, 12:30",
@@ -657,7 +686,9 @@ export default function DriverPage() {
     earningsToday: 78000,
   });
   const [actionLoading, setActionLoading] = useState(false);
-  const [currentClientTime, setCurrentClientTime] = useState<number>(Date.now());
+  const [currentClientTime, setCurrentClientTime] = useState<number>(
+    Date.now(),
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -822,10 +853,18 @@ export default function DriverPage() {
               o.simulationProgress || 0,
             );
 
-            const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+            const statusRank = [
+              "MENCARI_DRIVER",
+              "DITERIMA",
+              "DIJEMPUT",
+              "BERJALAN",
+              "SELESAI",
+            ];
             const prevIdx = statusRank.indexOf(prev!.status);
             const incomingIdx = statusRank.indexOf(o.status);
-            const safeStatus = (prevIdx > incomingIdx ? prev!.status : o.status) as OrderInfo['status'];
+            const safeStatus = (
+              prevIdx > incomingIdx ? prev!.status : o.status
+            ) as OrderInfo["status"];
 
             if (
               prev!.id === o.id &&
@@ -844,9 +883,18 @@ export default function DriverPage() {
               simulationProgress: safeProg,
               driver: {
                 ...o.driver,
-                currentLat: prevIdx > incomingIdx && prev!.driver ? prev!.driver.currentLat : o.driver.currentLat,
-                currentLng: prevIdx > incomingIdx && prev!.driver ? prev!.driver.currentLng : o.driver.currentLng,
-                heading: prevIdx > incomingIdx && prev!.driver ? prev!.driver.heading : o.driver.heading,
+                currentLat:
+                  prevIdx > incomingIdx && prev!.driver
+                    ? prev!.driver.currentLat
+                    : o.driver.currentLat,
+                currentLng:
+                  prevIdx > incomingIdx && prev!.driver
+                    ? prev!.driver.currentLng
+                    : o.driver.currentLng,
+                heading:
+                  prevIdx > incomingIdx && prev!.driver
+                    ? prev!.driver.heading
+                    : o.driver.heading,
               },
             };
           });
@@ -926,7 +974,8 @@ export default function DriverPage() {
   async function handleAcceptOrder(orderId: number) {
     if (!driver) return;
     setActionLoading(true);
-    const orderToAccept = incomingOrders.find((o) => o.id === orderId) || activeOrder;
+    const orderToAccept =
+      incomingOrders.find((o) => o.id === orderId) || activeOrder;
     try {
       const res = await fetch("/api/driver/active", {
         method: "POST",
@@ -954,7 +1003,11 @@ export default function DriverPage() {
             heading: 0,
             ratingAverage: driver.ratingAverage || 4.95,
             totalTrips: driver.totalTrips || 63,
-            user: { id: driver.id || 1, nama: driver.nama, noHp: "081234560001" },
+            user: {
+              id: driver.id || 1,
+              nama: driver.nama,
+              noHp: "081234560001",
+            },
             vehicle: {
               kodeUnit: driver.unit,
               modelName: "Becak Listrik Majalengka EV",
@@ -970,7 +1023,9 @@ export default function DriverPage() {
         setActiveOrder(acceptedOrder);
         chimedOrderIdsRef.current.add(orderId);
         setIncomingOrders((prev) => prev.filter((o) => o.id !== orderId));
-        setDismissedModalIds((prev) => (prev.includes(orderId) ? prev : [...prev, orderId]));
+        setDismissedModalIds((prev) =>
+          prev.includes(orderId) ? prev : [...prev, orderId],
+        );
         setAcceptNotification(
           `✓ Order ${acceptedOrder.kode} Berhasil Diambil! Segera meluncur ke ${acceptedOrder.jemputAlamat} untuk menjemput ${acceptedOrder.penumpangNama || "penumpang"}.`,
         );
@@ -1000,7 +1055,9 @@ export default function DriverPage() {
     rejectedOrderIdsRef.current.add(orderId);
     chimedOrderIdsRef.current.add(orderId);
     setIncomingOrders((prev) => prev.filter((o) => o.id !== orderId));
-    setDismissedModalIds((prev) => (prev.includes(orderId) ? prev : [...prev, orderId]));
+    setDismissedModalIds((prev) =>
+      prev.includes(orderId) ? prev : [...prev, orderId],
+    );
     setAcceptNotification("Pesanan berhasil dilewati.");
     try {
       await fetch("/api/driver/active", {
@@ -1129,7 +1186,7 @@ export default function DriverPage() {
         const data = await res.json().catch(() => null);
 
         let safeProg = 0;
-        let safeStatus: OrderInfo['status'] = 'BERJALAN';
+        let safeStatus: OrderInfo["status"] = "BERJALAN";
 
         if (data?.order) {
           setActiveOrder((prev) => {
@@ -1141,13 +1198,21 @@ export default function DriverPage() {
             // Jamin progres selalu melaju mulus ke depan minimal +1.5% per detik
             safeProg = Math.min(100, Math.max(prevProg + 1.5, serverProg));
 
-            const statusRank = ['MENCARI_DRIVER', 'DITERIMA', 'DIJEMPUT', 'BERJALAN', 'SELESAI'];
+            const statusRank = [
+              "MENCARI_DRIVER",
+              "DITERIMA",
+              "DIJEMPUT",
+              "BERJALAN",
+              "SELESAI",
+            ];
             const prevIdx = statusRank.indexOf(prev.status);
             const incomingIdx = statusRank.indexOf(data.order.status);
-            safeStatus = (prevIdx > incomingIdx ? prev.status : data.order.status) as OrderInfo['status'];
-            if (safeProg >= 100) safeStatus = 'SELESAI';
-            else if (safeProg >= 15) safeStatus = 'BERJALAN';
-            else if (safeProg >= 8) safeStatus = 'DIJEMPUT';
+            safeStatus = (
+              prevIdx > incomingIdx ? prev.status : data.order.status
+            ) as OrderInfo["status"];
+            if (safeProg >= 100) safeStatus = "SELESAI";
+            else if (safeProg >= 15) safeStatus = "BERJALAN";
+            else if (safeProg >= 8) safeStatus = "DIJEMPUT";
 
             activeOrderProgressRef.current = safeProg;
 
@@ -1175,8 +1240,18 @@ export default function DriverPage() {
           setActiveOrder((prev) => {
             if (!prev || prev.id !== activeOrdId) return prev;
             if (prev.status === "SELESAI") return prev;
-            const nextProg = Math.min(100, (prev.simulationProgress || 0) + 1.5);
-            const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 15 ? "BERJALAN" : nextProg >= 8 ? "DIJEMPUT" : prev.status;
+            const nextProg = Math.min(
+              100,
+              (prev.simulationProgress || 0) + 1.5,
+            );
+            const nextStatus =
+              nextProg >= 100
+                ? "SELESAI"
+                : nextProg >= 15
+                  ? "BERJALAN"
+                  : nextProg >= 8
+                    ? "DIJEMPUT"
+                    : prev.status;
             activeOrderProgressRef.current = nextProg;
             return {
               ...prev,
@@ -1191,7 +1266,14 @@ export default function DriverPage() {
           if (!prev || prev.id !== activeOrdId) return prev;
           if (prev.status === "SELESAI") return prev;
           const nextProg = Math.min(100, (prev.simulationProgress || 0) + 1.5);
-          const nextStatus = nextProg >= 100 ? "SELESAI" : nextProg >= 15 ? "BERJALAN" : nextProg >= 8 ? "DIJEMPUT" : prev.status;
+          const nextStatus =
+            nextProg >= 100
+              ? "SELESAI"
+              : nextProg >= 15
+                ? "BERJALAN"
+                : nextProg >= 8
+                  ? "DIJEMPUT"
+                  : prev.status;
           activeOrderProgressRef.current = nextProg;
           return {
             ...prev,
@@ -1212,13 +1294,20 @@ export default function DriverPage() {
     try {
       bc = new BroadcastChannel("becaklik_simulation_sync");
       bc.onmessage = (event) => {
-        if (event.data?.type === "SIM_PROGRESS" && event.data.orderId === activeOrdId) {
+        if (
+          event.data?.type === "SIM_PROGRESS" &&
+          event.data.orderId === activeOrdId
+        ) {
           const incomingProg = Number(event.data.progress || 0);
           setActiveOrder((prev) => {
             if (!prev || prev.id !== activeOrdId) return prev;
             if (prev.status === "SELESAI") return prev;
-            const safeProg = Math.max(prev.simulationProgress || 0, incomingProg);
-            const newStatus = event.data.status || (safeProg >= 100 ? "SELESAI" : prev.status);
+            const safeProg = Math.max(
+              prev.simulationProgress || 0,
+              incomingProg,
+            );
+            const newStatus =
+              event.data.status || (safeProg >= 100 ? "SELESAI" : prev.status);
             return {
               ...prev,
               simulationProgress: safeProg,
@@ -1248,8 +1337,13 @@ export default function DriverPage() {
             playOrderChime();
             return [incoming, ...prev];
           });
-        } else if (event.data?.type === "ORDER_CANCELLED" && event.data.orderId) {
-          setIncomingOrders((prev) => prev.filter((o) => o.id !== event.data.orderId));
+        } else if (
+          event.data?.type === "ORDER_CANCELLED" &&
+          event.data.orderId
+        ) {
+          setIncomingOrders((prev) =>
+            prev.filter((o) => o.id !== event.data.orderId),
+          );
           setActiveOrder((prev) => {
             if (prev && prev.id === event.data.orderId) {
               if (typeof window !== "undefined") {
@@ -1302,7 +1396,9 @@ export default function DriverPage() {
   const switchToDriverChat = () => {
     setDriverTab("chat");
     setTimeout(() => {
-      document.getElementById("driver-chat-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document
+        .getElementById("driver-chat-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 60);
   };
 
@@ -1355,7 +1451,7 @@ export default function DriverPage() {
       const approachRoute = generatePickupApproachRoute(
         routeCoords[0][0],
         routeCoords[0][1],
-        routeCoords[1]
+        routeCoords[1],
       );
       const approachProg = Math.min(100, Math.max(0, (prog / 15) * 100));
       const interp = interpolateRoutePosition(approachRoute, approachProg);
@@ -1367,7 +1463,10 @@ export default function DriverPage() {
       driverMapPos = interp.position;
       driverMapHeading = interp.heading;
     }
-  } else if (activeOrder?.driver?.currentLat && activeOrder?.driver?.currentLng) {
+  } else if (
+    activeOrder?.driver?.currentLat &&
+    activeOrder?.driver?.currentLng
+  ) {
     driverMapPos = [
       activeOrder.driver.currentLat,
       activeOrder.driver.currentLng,
@@ -2231,7 +2330,13 @@ export default function DriverPage() {
                     }}
                   >
                     <Route size={14} style={{ flexShrink: 0 }} />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span
+                      style={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       Navigasi Trip
                     </span>
                   </button>
@@ -2262,7 +2367,13 @@ export default function DriverPage() {
                     }}
                   >
                     <MessageSquare size={14} style={{ flexShrink: 0 }} />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span
+                      style={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       Chat Penumpang
                     </span>
                   </button>
@@ -3001,13 +3112,21 @@ export default function DriverPage() {
                 Ulasan & Penilaian Pelanggan ({reviews.length} Ulasan)
               </h2>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flexWrap: "wrap",
+              }}
+            >
               <div
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "6px",
-                  background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                  background:
+                    "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
                   border: "1px solid #7dd3fc",
                   padding: "6px 14px",
                   borderRadius: "999px",
@@ -3016,8 +3135,12 @@ export default function DriverPage() {
                   fontSize: "12px",
                 }}
               >
-                <span>{driver?.badge || "🏆 Peringkat 1 · Driver Terbaik"}</span>
-                <span>· Peringkat #{driver?.rank || 1}/{driver?.totalDrivers || 6}</span>
+                <span>
+                  {driver?.badge || "🏆 Peringkat 1 · Driver Terbaik"}
+                </span>
+                <span>
+                  · Peringkat #{driver?.rank || 1}/{driver?.totalDrivers || 6}
+                </span>
               </div>
               <div
                 style={{
@@ -3058,21 +3181,31 @@ export default function DriverPage() {
             }}
           >
             <div>
-              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>
+              <span
+                style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}
+              >
                 Total Perjalanan Selesai
               </span>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>
+              <div
+                style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a" }}
+              >
                 {driver?.totalTrips || 48} Perjalanan
               </div>
-              <small style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}>
+              <small
+                style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}
+              >
                 ✓ 100% Bebas Komplain
               </small>
             </div>
             <div>
-              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>
+              <span
+                style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}
+              >
                 Ulasan Tertulis Masuk
               </span>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "#0284c7" }}>
+              <div
+                style={{ fontSize: "18px", fontWeight: 800, color: "#0284c7" }}
+              >
                 {reviews.length} Ulasan
               </div>
               <small style={{ fontSize: "11px", color: "#64748b" }}>
@@ -3080,28 +3213,40 @@ export default function DriverPage() {
               </small>
             </div>
             <div>
-              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>
+              <span
+                style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}
+              >
                 Total Apresiasi Tip Diterima
               </span>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "#a16207" }}>
+              <div
+                style={{ fontSize: "18px", fontWeight: 800, color: "#a16207" }}
+              >
                 {currency(
                   reviews.reduce((sum, r) => sum + (r.tip || 0), 0) ||
                     driver?.tipsReceived ||
                     31000,
                 )}
               </div>
-              <small style={{ fontSize: "11px", color: "#854d0e", fontWeight: 700 }}>
+              <small
+                style={{ fontSize: "11px", color: "#854d0e", fontWeight: 700 }}
+              >
                 🎁 100% Hak Penuh Driver
               </small>
             </div>
             <div>
-              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>
+              <span
+                style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}
+              >
                 Skor Performa Pangkalan
               </span>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "#15803d" }}>
+              <div
+                style={{ fontSize: "18px", fontWeight: 800, color: "#15803d" }}
+              >
                 {driver?.performanceScore || 98.5} / 100
               </div>
-              <small style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}>
+              <small
+                style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}
+              >
                 ★ Sangat Memuaskan
               </small>
             </div>
@@ -3114,7 +3259,10 @@ export default function DriverPage() {
               gap: "16px",
             }}
           >
-            {(showAllReviews ? sortedDriverReviews : sortedDriverReviews.slice(0, 6)).map((rev) => (
+            {(showAllReviews
+              ? sortedDriverReviews
+              : sortedDriverReviews.slice(0, 6)
+            ).map((rev) => (
               <div
                 key={rev.orderId ? `ord-${rev.orderId}` : `id-${rev.id}`}
                 style={{
@@ -3236,7 +3384,11 @@ export default function DriverPage() {
                 type="button"
                 className="button button-outline"
                 onClick={() => setShowAllReviews((prev) => !prev)}
-                style={{ fontSize: "12px", fontWeight: 700, padding: "8px 18px" }}
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  padding: "8px 18px",
+                }}
               >
                 {showAllReviews
                   ? "Ringkas Tampilan (6 Ulasan Terbaru)"

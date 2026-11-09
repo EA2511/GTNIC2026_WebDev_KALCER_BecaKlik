@@ -16,151 +16,25 @@ import {
   SNAPSHOT_FLEET_DRIVERS,
   SNAPSHOT_DRIVER_STATS,
 } from './defaultStoreSnapshot';
+import type {
+  SharedOrder,
+  SharedRating,
+  SharedChatMessage,
+  SharedRegisteredUser,
+  SharedFleetDriver,
+  RankedFleetDriver,
+  PassengerHistorySyncItem,
+} from './types';
 
-export interface SharedOrder {
-  id: number;
-  kode: string;
-  status: 'MENCARI_DRIVER' | 'DITERIMA' | 'DIJEMPUT' | 'BERJALAN' | 'SELESAI' | 'DIBATALKAN';
-  jemputAlamat: string;
-  jemputLat: number;
-  jemputLng: number;
-  tujuanAlamat: string;
-  tujuanLat: number;
-  tujuanLng: number;
-  penumpangNama: string;
-  penumpangEmail: string;
-  penumpangNoHp: string;
-  jarakKm: number;
-  durasiMenit: number;
-  tarif: number;
-  diskon: number;
-  totalBayar: number;
-  tip?: number;
-  promoKode?: string;
-  serviceType?: 'REGULER' | 'KARGO' | 'WISATA';
-  passengerCount?: number;
-  catatan?: string;
-  metodePembayaran?: 'QRIS' | 'CASH' | 'TUNAI' | 'SALDO';
-  simulationProgress: number;
-  routeGeometry: string;
-  driverId: number | null;
-  lastStepAt?: number;
-  dismissedByDriver?: boolean;
-  dismissedByPassenger?: boolean;
-  countedInStats?: boolean;
-  countedTip?: number;
-  driver?: {
-    id: number;
-    currentLat: number;
-    currentLng: number;
-    heading: number;
-    ratingAverage: number;
-    totalTrips: number;
-    user: { id: number; nama: string; noHp: string };
-    vehicle: {
-      kodeUnit: string;
-      modelName: string;
-      warna: string;
-      kapasitas: number;
-      batteryPct: number;
-    };
-  } | null;
-  vehicle?: {
-    kodeUnit: string;
-    modelName: string;
-    warna: string;
-    kapasitas: number;
-    batteryPct: number;
-  } | null;
-  createdAt: string;
-}
-
-export interface SharedRating {
-  id: number;
-  orderId: number;
-  penumpangNama: string;
-  driverNama: string;
-  unit: string;
-  skor: number;
-  kategori: string;
-  komentar: string;
-  tip?: number;
-  rute?: string;
-  createdAt: string;
-  timestamp: number;
-}
-
-export interface SharedChatMessage {
-  id: number;
-  orderId: number;
-  senderRole: 'PENUMPANG' | 'DRIVER' | 'ADMIN';
-  senderId?: number;
-  senderNama: string;
-  pesan: string;
-  createdAt: string;
-}
-
-export interface SharedRegisteredUser {
-  id: number;
-  nama: string;
-  email: string;
-  noHp: string;
-  password: string;
-  role: 'PENUMPANG' | 'DRIVER' | 'ADMIN';
-  createdAt: string;
-}
-
-export interface SharedFleetDriver {
-  rawId: number;
-  id: string;
-  nama: string;
-  email: string;
-  noHp: string;
-  unit: string;
-  status: 'ONLINE' | 'ON_TRIP' | 'OFFLINE';
-  battery: number;
-  trips: number;
-  completedToday: number;
-  income: number;
-  tipsReceived: number;
-  rating: number;
-  onTimeRate: number;
-  ecoScore: number;
-  koridor: string;
-  lat: number;
-  lng: number;
-  heading: number;
-}
-
-export interface RankedFleetDriver extends SharedFleetDriver {
-  rank: number;
-  performanceScore: number;
-  badge: string;
-  statusLabel: 'Online' | 'Dalam perjalanan' | 'Offline';
-}
-
-export interface PassengerHistorySyncItem {
-  id: number;
-  kode: string;
-  tanggal: string;
-  timestamp?: number;
-  jemputAlamat: string;
-  tujuanAlamat: string;
-  jarakKm: number;
-  durasiMenit: number;
-  tarif: number;
-  diskon: number;
-  tip: number;
-  totalBayar: number;
-  metode: string;
-  driverNama: string;
-  driverUnit: string;
-  ratingScore: number;
-  ratingCategory: string;
-  ratingComment: string;
-  penumpangNama?: string;
-  penumpangEmail?: string;
-}
+export type {
+  SharedOrder,
+  SharedRating,
+  SharedChatMessage,
+  SharedRegisteredUser,
+  SharedFleetDriver,
+  RankedFleetDriver,
+  PassengerHistorySyncItem,
+};
 
 const BASE_RATING_TIME = Date.UTC(2026, 10, 7, 17, 0, 0);
 
@@ -339,6 +213,48 @@ const INITIAL_RATINGS: SharedRating[] = [
     rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
     createdAt: 'Kemarin, 22:20',
     timestamp: 1794064800000,
+  },
+  {
+    id: 1003,
+    orderId: 1003,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Perjalanan memuaskan dan hening.',
+    tip: 2000,
+    rute: 'Alun-Alun Majalengka & Masjid Agung Al-Imam ➔ Bunderan Munjul & Tugu Bola Dunia',
+    createdAt: 'Kemarin, 22:00',
+    timestamp: 1794063600000,
+  },
+  {
+    id: 1002,
+    orderId: 1002,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Tepat Waktu & Hening',
+    komentar: 'Perjalanan memuaskan dan hening.',
+    tip: 10000,
+    rute: 'Rumah Warga (Perum Wijaya Kusuma, Cijati) ➔ Pasar Tradisional Sindangkasih Cigasong',
+    createdAt: 'Kemarin, 21:20',
+    timestamp: 1794061200000,
+  },
+  {
+    id: 1000,
+    orderId: 1000,
+    penumpangNama: 'Rina Kusuma',
+    driverNama: 'Budi Santoso',
+    unit: 'BL-001',
+    skor: 5,
+    kategori: 'Rute Cepat & Aman',
+    komentar: 'Perjalanan nyaman dan hening.',
+    tip: 0,
+    rute: 'Terminal Maja Majalengka ➔ Alun-Alun Majalengka & Masjid Agung Al-Imam',
+    createdAt: 'Kemarin, 20:20',
+    timestamp: 1794057600000,
   },
   {
     id: 1001,
@@ -690,18 +606,6 @@ function isCorruptedBaseTimestamp(ts: number): boolean {
   return ts >= 1794070800000 && ts <= 1794070860000;
 }
 
-function parseAndFormatRatingTime(r: SharedRating, now: number = Date.now()): { createdAt: string; timestamp: number } {
-  const orderTs = getLinkedOrderTimestamp(r.orderId);
-  let ts = orderTs || parseRatingTimestamp(r, now);
-  if (r.orderId === 1001) {
-    ts = Date.UTC(2026, 10, 7, 9, 37, 0);
-  }
-  return {
-    createdAt: formatDynamicReviewTime(ts, now),
-    timestamp: ts,
-  };
-}
-
 function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
   const seedMap = new Map<number, SharedRating>();
   for (const sr of INITIAL_RATINGS) {
@@ -729,17 +633,36 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
     if (orderId === 1001) {
       ts = Date.UTC(2026, 10, 7, 9, 37, 0);
     }
+    if (orderId === 1013) {
+      ts = 1794031800000;
+    }
+    if (orderId === 1012) {
+      ts = 1794029400000;
+    }
 
     const dynamicCreatedAt = formatDynamicReviewTime(ts, now);
-    const normalized: SharedRating = {
-      ...r,
-      orderId,
-      id: r.id || orderId,
-      createdAt: dynamicCreatedAt,
-      timestamp: ts,
-    };
+    const authorName =
+      orderId <= 1016 && seed?.penumpangNama
+        ? seed.penumpangNama
+        : r.penumpangNama || seed?.penumpangNama || 'Edrick';
+
+    const finalReview: SharedRating =
+      orderId <= 1016 && seed
+        ? {
+            ...seed,
+            createdAt: dynamicCreatedAt,
+            timestamp: ts,
+          }
+        : {
+            ...r,
+            penumpangNama: authorName,
+            orderId,
+            id: r.id || orderId,
+            createdAt: dynamicCreatedAt,
+            timestamp: ts,
+          };
     if (!deduped.has(orderId)) {
-      deduped.set(orderId, normalized);
+      deduped.set(orderId, finalReview);
     }
   }
 
@@ -1694,8 +1617,8 @@ export const sharedStore = {
 
     for (const t of trips) {
       if (!t || !t.id) continue;
-      // Abaikan seed default yang sudah ada di INITIAL_RATINGS dengan urutan waktu yang rapi
-      if (t.id === 990 || t.id === 991 || t.id === 1001 || t.id === 1012 || t.id === 1013) continue;
+      // Abaikan semua pesanan baseline (<= 1016) karena sudah dikunci permanen dengan data autentik
+      if (t.id <= 1016) continue;
 
       const defaultTripNames: Record<number, string> = {
         1016: 'Edrick',
