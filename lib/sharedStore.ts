@@ -929,6 +929,8 @@ const CACHE_FILE_PATH =
     ? path.join("/tmp", ".becak-store-cache.json")
     : path.join(process.cwd(), ".becak-store-cache.json");
 
+const CURRENT_CACHE_VERSION = 6;
+
 function loadPersistedCache(): Partial<{
   version: number;
   orders: [number, SharedOrder][];
@@ -947,7 +949,10 @@ function loadPersistedCache(): Partial<{
   try {
     if (fs.existsSync(CACHE_FILE_PATH)) {
       const raw = fs.readFileSync(CACHE_FILE_PATH, "utf-8");
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.version === CURRENT_CACHE_VERSION) {
+        return parsed;
+      }
     }
   } catch {
     // ignore read error
@@ -958,7 +963,7 @@ function loadPersistedCache(): Partial<{
 function savePersistedCache(s: StoreData): void {
   try {
     const payload = {
-      version: 5,
+      version: CURRENT_CACHE_VERSION,
       orders: Array.from(s.orders.entries()),
       chatMessages: Array.from(s.chatMessages.entries()),
       ratings: sortRatingsNewestFirst(s.ratings),
