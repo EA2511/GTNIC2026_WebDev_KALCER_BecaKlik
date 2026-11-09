@@ -14,8 +14,12 @@
   <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma" alt="Prisma" />
   <img src="https://img.shields.io/badge/Leaflet-Maps-199900?style=for-the-badge&logo=leaflet" alt="Leaflet" />
-  <img src="https://img.shields.io/badge/Status-Lomba_Web_Ready-0284c7?style=for-the-badge" alt="Status" />
+  <img src="https://img.shields.io/badge/Website_Live-becaklik.my.id-0284c7?style=for-the-badge&logo=vercel" alt="Website Live" />
 </p>
+
+> 🌐 **URL Website Live (Production)**: **[https://becaklik.my.id](https://becaklik.my.id)**  
+> 📦 **Repositori Kode Publik**: **[https://github.com/EA2511/Lomba-Web-BECAK-LISTRIK](https://github.com/EA2511/Lomba-Web-BECAK-LISTRIK)**  
+> 🏆 **Kompetisi**: GTNIC 2026 — Web Development Competition
 
 ---
 
@@ -104,6 +108,26 @@ Platform ini menghubungkan 3 aktor utama secara real-time:
 
 ---
 
+## ⚙️ Konfigurasi Environment (`.env`)
+
+Sesuai standar keamanan dasar (*security best practice*), file `.env` yang memuat kredensial terlindungi dan **tidak pernah diunggah ke repositori publik** (otomatis diabaikan melalui `.gitignore`).
+
+Untuk keperluan pengujian lokal, sebuah berkas contoh [`.env.example`](.env.example) telah disediakan. Cukup salin berkas tersebut menjadi `.env`:
+
+```bash
+# Salin template variabel lingkungan
+cp .env.example .env
+```
+
+| Variabel | Deskripsi | Nilai Default / Contoh |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | String koneksi database relasional Prisma (MySQL / SQLite / PostgreSQL) | `mysql://root:@localhost:3306/becak_listrik` |
+| `SESSION_SECRET` | Kunci enkripsi sesi otentikasi JWT (minimal 32 karakter unik) | `abcdefghijklmnopqrstuvwxyzabcdefgh` |
+
+> 💡 *Catatan Pengujian Live:* Pada lingkungan deployment Vercel (`https://becaklik.my.id`), seluruh konfigurasi environment telah disuntikkan secara aman melalui dashboard Vercel serta dilengkapi engine *fallback* cerdas in-memory yang memastikan seluruh fitur, rute, dan simulasi tetap berjalan lancar 100%.
+
+---
+
 ## 🚀 Panduan Menjalankan Aplikasi
 
 ### Opsi 1: Cara Termudah (Windows Double-Click)
@@ -134,7 +158,7 @@ Buka peramban Anda di **`http://localhost:3000`**.
 
 ## 🔑 Akses Cepat Akun Demo (1-Click Demo Login)
 
-Pada halaman **`http://localhost:3000/login`**, telah disediakan tombol **Masuk 1-Klik** untuk mempermudah penilaian juri:
+Pada halaman login live **[https://becaklik.my.id/login](https://becaklik.my.id/login)** (atau `http://localhost:3000/login` pada lingkungan lokal), telah disediakan tombol **Masuk 1-Klik** untuk mempermudah penilaian dewan juri tanpa perlu mengetik manual:
 
 | Peran | Nama Persona | Email | Kata Sandi | Halaman Utama |
 | :--- | :--- | :--- | :--- | :--- |
