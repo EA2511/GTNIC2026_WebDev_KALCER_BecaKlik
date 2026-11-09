@@ -1,4 +1,4 @@
-# LAPORAN AKHIR — BECak LISTRIK MOBILITY PLATFORM (LAJUKOTA)
+# LAPORAN AKHIR — BECAKLIK MAJALENGKA MOBILITY PLATFORM
 ## Rekayasa Perangkat Lunak, Geospasial, & Platform Simulasi Siap Perlombaan GTNIC 2026
 
 **Klasifikasi**: Final Engineering & Competition Demonstration Report  

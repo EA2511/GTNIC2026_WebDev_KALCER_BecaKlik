@@ -2,7 +2,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import type { Role } from "@prisma/client";
 
-const COOKIE_NAME = "lajukota_session";
+const COOKIE_NAME = "becaklik_session";
+const LEGACY_COOKIE_NAME = "lajukota_session";
 const SESSION_DURATION = 60 * 60 * 24 * 7;
 
 export type SessionData = {
@@ -93,7 +94,9 @@ export async function setSession(
 
 export async function getSession(): Promise<SessionData | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token =
+    cookieStore.get(COOKIE_NAME)?.value ||
+    cookieStore.get(LEGACY_COOKIE_NAME)?.value;
 
   if (!token) return null;
 
@@ -104,6 +107,13 @@ export async function clearSession(): Promise<void> {
   const cookieStore = await cookies();
 
   cookieStore.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  cookieStore.set(LEGACY_COOKIE_NAME, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

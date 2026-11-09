@@ -1,15 +1,15 @@
-# TECHNICAL AUDIT — BECak LISTRIK MOBILITY PLATFORM (LAJUKOTA)
+# TECHNICAL AUDIT — BECAKLIK MAJALENGKA MOBILITY PLATFORM
 
 **Tanggal Audit**: 28 Oktober 2026  
 **Auditor**: Senior Full-Stack Engineering, Geospatial Systems & Security Architecture Team  
-**Proyek**: Becak Listrik Mobility Platform (LajuKota)  
+**Proyek**: BecaKlik Majalengka Mobility Platform  
 **Status Repositori**: Git Branch `main`  
 
 ---
 
 ## 1. Executive Summary
 
-Audit teknis ini dilakukan terhadap codebase prototipe **Becak Listrik** (dengan penamaan awal *LajuKota*) yang ditujukan untuk perlombaan teknologi mobilitas berkelanjutan dan UMKM.
+Audit teknis ini dilakukan terhadap codebase **BecaKlik Majalengka** yang ditujukan untuk perlombaan teknologi mobilitas berkelanjutan dan UMKM.
 
 ### Kondisi Awal Temuan Utama:
 1. **Frontend & UI Layer**: Dibangun menggunakan Next.js 16 (App Router) + React 19 + Tailwind CSS v4. UI berdesain awal yang cukup estetik, namun **halaman pelanggan, driver, dan admin masih 100% menggunakan state lokal client-side (`useState`) dan mock array statis**. Terdapat disclaimer internal: *"Mode demo · tanpa database"*.

@@ -1,4 +1,4 @@
-# SECURITY REVIEW — BECak LISTRIK MOBILITY PLATFORM (LAJUKOTA)
+# SECURITY REVIEW — BECAKLIK MAJALENGKA MOBILITY PLATFORM
 
 **Klasifikasi Dokumen**: Security & Privacy Architecture Review  
 **Tanggal**: 28 Oktober 2026  
