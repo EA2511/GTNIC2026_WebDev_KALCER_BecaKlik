@@ -1142,9 +1142,41 @@ p {
 }
 
 .footer-copy {
-  margin-left: auto;
   color: #8a9baa;
-  font-size: 10px;
+  font-size: 11px;
+}
+
+.footer-kalcer-credit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.footer-kalcer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .footer-kalcer-credit {
+    margin-left: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 6px;
+  }
 }
 
 /* HALAMAN PELANGGAN, DRIVER, ADMIN */

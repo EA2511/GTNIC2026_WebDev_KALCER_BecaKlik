@@ -773,6 +773,19 @@ function LoginFormContent() {
             <ShieldCheck size={14} color="#0284c7" />
             <span>Sistem Otentikasi Terenkripsi · Sesi Tersimpan Aman</span>
           </div>
+
+          <div
+            style={{
+              marginTop: '14px',
+              paddingTop: '12px',
+              borderTop: '1px solid #f1f5f9',
+              textAlign: 'center',
+              fontSize: '11px',
+              color: '#94a3b8',
+            }}
+          >
+            © 2026 BecaKlik Majalengka · Dibuat oleh <strong>Tim KALCER</strong> (GTNIC 2026)
+          </div>
         </div>
       </section>
     </main>

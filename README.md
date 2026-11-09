@@ -178,5 +178,5 @@ Pada halaman login live **[https://becaklik.my.id/login](https://becaklik.my.id/
 ---
 
 <p align="center">
-  © 2026 <strong>BecaKlik Team</strong> — Majalengka. All rights reserved.
+  © 2026 <strong>BecaKlik Majalengka</strong> — Dibuat &amp; Dikembangkan oleh <strong>Tim KALCER</strong> (GTNIC 2026). All rights reserved.
 </p>

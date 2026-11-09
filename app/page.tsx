@@ -376,11 +376,16 @@ export default function HomePage() {
           </Link>
           <p>
             BecaKlik — Sistem Manajemen Operasional &amp; Pemesanan Becak Listrik Kawasan Perkotaan Majalengka, Jawa Barat.
-            Inisiatif Mobilitas Bersih &amp; Berkelanjutan.
+            Inisiatif Mobilitas Bersih &amp; Berkelanjutan karya <strong>Tim KALCER</strong> untuk GTNIC 2026.
           </p>
-          <span className="footer-copy">
-            © 2026 BecaKlik Majalengka · Inovasi Mobilitas Cerdas Berkelanjutan
-          </span>
+          <div className="footer-kalcer-credit">
+            <span className="footer-kalcer-badge">
+              ⚡ Dibuat &amp; Dikembangkan oleh <strong>Tim KALCER</strong>
+            </span>
+            <span className="footer-copy">
+              © 2026 BecaKlik Majalengka by <strong>KALCER</strong>. All rights reserved.
+            </span>
+          </div>
         </div>
       </footer>
     </main>
