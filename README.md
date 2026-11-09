@@ -168,15 +168,6 @@ Pada halaman login live **[https://becaklik.my.id/login](https://becaklik.my.id/
 
 ---
 
-## 🏆 Kesiapan Lomba & Integritas Kode
-
-- ✅ **Full Responsive**: Dioptimalkan untuk layar ponsel pintar, tablet, maupun monitor desktop.
-- ✅ **Clean Code**: Terverifikasi bebas dari peringatan sintaks dan lulus uji kompilasi TypeScript (`tsc --noEmit`).
-- ✅ **Offline-First Resilience**: Dukungan fallback disk cache yang menjaga data simulasi tetap konsisten tanpa ketergantungan koneksi server eksternal.
-
----
-
 <p align="center">
-  Dikembangkan dengan dedikasi untuk <strong>Lomba Inovasi Web — Ekosistem Becak Listrik Majalengka</strong>.<br />
-  © 2026 <strong>BecaKlik Team</strong>. All rights reserved.
+  © 2026 <strong>BecaKlik Team</strong> — Majalengka. All rights reserved.
 </p>
