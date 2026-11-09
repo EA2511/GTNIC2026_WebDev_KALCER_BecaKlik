@@ -18,7 +18,7 @@
 </p>
 
 > 🌐 **URL Website Live (Production)**: **[https://becaklik.my.id](https://becaklik.my.id)**  
-> 📦 **Repositori Kode Publik**: **[https://github.com/EA2511/Lomba-Web-BECAK-LISTRIK](https://github.com/EA2511/Lomba-Web-BECAK-LISTRIK)**  
+> 📦 **Repositori Kode Publik**: **[https://github.com/EA2511/GTNIC2026-Lomba-Web-Dev-BecaKlik](https://github.com/EA2511/GTNIC2026-Lomba-Web-Dev-BecaKlik)**  
 > 🏆 **Kompetisi**: GTNIC 2026 — Web Development Competition
 
 ---
