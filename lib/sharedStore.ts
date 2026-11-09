@@ -78,7 +78,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1015,
     orderId: 1015,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -92,7 +92,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1014,
     orderId: 1014,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -148,7 +148,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1008,
     orderId: 1008,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -162,7 +162,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1007,
     orderId: 1007,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -176,7 +176,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1006,
     orderId: 1006,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -190,7 +190,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1005,
     orderId: 1005,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -204,7 +204,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1004,
     orderId: 1004,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -218,7 +218,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1003,
     orderId: 1003,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -232,7 +232,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1002,
     orderId: 1002,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -246,7 +246,7 @@ const INITIAL_RATINGS: SharedRating[] = [
   {
     id: 1000,
     orderId: 1000,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -742,27 +742,19 @@ function sortRatingsNewestFirst(list: SharedRating[]): SharedRating[] {
 
     const dynamicCreatedAt = formatDynamicReviewTime(ts, now);
     const authorName =
-      isLiveUserRating && r.penumpangNama
+      (r.penumpangNama && r.penumpangNama.trim() && r.penumpangNama !== "Pelanggan BecakListrik")
         ? r.penumpangNama
-        : (orderId <= 1016 && seed?.penumpangNama
-          ? seed.penumpangNama
-          : r.penumpangNama || seed?.penumpangNama || "Edrick");
+        : (seed?.penumpangNama || "Edrick");
 
-    const finalReview: SharedRating =
-      orderId <= 1016 && seed && !isLiveUserRating
-        ? {
-            ...seed,
-            createdAt: dynamicCreatedAt,
-            timestamp: ts,
-          }
-        : {
-            ...r,
-            penumpangNama: authorName,
-            orderId,
-            id: r.id || orderId,
-            createdAt: dynamicCreatedAt,
-            timestamp: ts,
-          };
+    const finalReview: SharedRating = {
+      ...(seed || {}),
+      ...r,
+      penumpangNama: authorName,
+      orderId,
+      id: r.id || orderId,
+      createdAt: dynamicCreatedAt,
+      timestamp: ts,
+    };
     if (!deduped.has(orderId)) {
       deduped.set(orderId, finalReview);
     }
@@ -1813,18 +1805,30 @@ export const sharedStore = {
 
       const defaultTripNames: Record<number, string> = {
         1016: "Edrick",
-        1015: "Rina Kusuma",
-        1014: "Rina Kusuma",
+        1015: "Edrick",
+        1014: "Edrick",
         1013: "Edrick",
         1012: "Edrick",
         1011: "Wowo",
         1010: "Khalil",
         1009: "Edrick Andreas",
+        1008: "Edrick",
+        1007: "Edrick",
+        1006: "Edrick",
+        1005: "Edrick",
+        1004: "Edrick",
+        1003: "Edrick",
+        1002: "Edrick",
         1001: "Edrick Andreas",
+        1000: "Edrick",
       };
 
-      const passengerName =
-        (t.penumpangNama && t.penumpangNama.trim()) ||
+      const passengerName: string =
+        (t.penumpangNama &&
+        t.penumpangNama.trim() &&
+        t.penumpangNama !== "Pelanggan BecakListrik"
+          ? t.penumpangNama.trim()
+          : undefined) ||
         defaultTripNames[t.id] ||
         store.orders.get(t.id)?.penumpangNama ||
         "Edrick";

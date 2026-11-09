@@ -471,7 +471,7 @@ export default function DriverPage() {
       {
         id: 1015,
         orderId: 1015,
-        penumpangNama: "Rina Kusuma",
+        penumpangNama: "Edrick",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
         komentar: "Perjalanan nyaman dan hening.",
@@ -483,7 +483,7 @@ export default function DriverPage() {
       {
         id: 1014,
         orderId: 1014,
-        penumpangNama: "Rina Kusuma",
+        penumpangNama: "Edrick",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
         komentar: "Perjalanan nyaman dan hening.",
@@ -531,7 +531,7 @@ export default function DriverPage() {
       {
         id: 1008,
         orderId: 1008,
-        penumpangNama: "Rina Kusuma",
+        penumpangNama: "Edrick",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
         komentar: "Perjalanan memuaskan dan hening.",
@@ -543,7 +543,7 @@ export default function DriverPage() {
       {
         id: 1007,
         orderId: 1007,
-        penumpangNama: "Rina Kusuma",
+        penumpangNama: "Edrick",
         skor: 5,
         kategori: "Tepat Waktu & Hening",
         komentar: "Perjalanan memuaskan dan hening.",

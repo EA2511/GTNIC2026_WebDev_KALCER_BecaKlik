@@ -875,7 +875,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1794107115763,
     orderId: 1015,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -889,7 +889,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1794106079146,
     orderId: 1014,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -945,7 +945,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1008,
     orderId: 1008,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -959,7 +959,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1007,
     orderId: 1007,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -973,7 +973,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1006,
     orderId: 1006,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -987,7 +987,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1005,
     orderId: 1005,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -1001,7 +1001,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1004,
     orderId: 1004,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -1015,7 +1015,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1003,
     orderId: 1003,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -1029,7 +1029,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1002,
     orderId: 1002,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,
@@ -1043,7 +1043,7 @@ export const SNAPSHOT_RATINGS: SharedRating[] = [
   {
     id: 1794068060408,
     orderId: 1000,
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     driverNama: "Budi Santoso",
     unit: "BL-001",
     skor: 5,

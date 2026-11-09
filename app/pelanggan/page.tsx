@@ -203,7 +203,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "QRIS",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     ratingScore: 5,
     ratingCategory: "Tepat Waktu & Hening",
     ratingComment: "Perjalanan nyaman dan hening.",
@@ -224,7 +224,7 @@ const DEFAULT_TRIP_HISTORY: CompletedTrip[] = [
     metode: "CASH",
     driverNama: "Budi Santoso",
     driverUnit: "BL-001",
-    penumpangNama: "Rina Kusuma",
+    penumpangNama: "Edrick",
     ratingScore: 5,
     ratingCategory: "Tepat Waktu & Hening",
     ratingComment: "Perjalanan nyaman dan hening.",
@@ -996,27 +996,6 @@ function PelangganContent() {
           }
           setTripHistory(list);
           localStorage.setItem("becak_passenger_trip_history", JSON.stringify(list));
-
-          // Sinkronkan riwayat perjalanan ke server agar muncul di halaman Driver & Admin
-          void fetch("/api/driver/active", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "SYNC_HISTORY",
-              trips: list.map((t) => ({
-                ...t,
-                penumpangNama:
-                  t.penumpangNama ||
-                  (t.id === 1016 || t.id === 1013 || t.id === 1012 || t.id === 1009 || t.id === 1001
-                    ? "Edrick"
-                    : t.id === 1011
-                    ? "Wowo"
-                    : t.id === 1010
-                    ? "Khalil"
-                    : "Rina Kusuma"),
-              })),
-            }),
-          }).catch(() => {});
         } catch {
           // fallback to default history
         }

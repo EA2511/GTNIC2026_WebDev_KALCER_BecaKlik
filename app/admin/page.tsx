@@ -142,15 +142,149 @@ interface AdminReview {
   timestamp?: number;
 }
 
+function formatAdminReviewDynamicTime(
+  rev: AdminReview,
+  now: number = Date.now(),
+): string {
+  const ts =
+    typeof rev.timestamp === "number" && rev.timestamp > 0
+      ? rev.timestamp
+      : (1700000000000 + (rev.orderId || rev.id || 0));
+
+  const diffMs = Math.max(0, now - ts);
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+
+  if (diffSec < 45) return "Baru saja";
+  if (diffMin < 1) return "Baru saja";
+  if (diffMin < 60) return `${diffMin} menit lalu`;
+
+  const WIB_OFFSET = 7 * 3600 * 1000;
+  const reviewWib = new Date(ts + WIB_OFFSET);
+  const nowWib = new Date(now + WIB_OFFSET);
+
+  const rYear = reviewWib.getUTCFullYear();
+  const rMonth = reviewWib.getUTCMonth();
+  const rDate = reviewWib.getUTCDate();
+  const rHours = String(reviewWib.getUTCHours()).padStart(2, "0");
+  const rMinutes = String(reviewWib.getUTCMinutes()).padStart(2, "0");
+  const timeStr = `${rHours}:${rMinutes}`;
+
+  const nYear = nowWib.getUTCFullYear();
+  const nMonth = nowWib.getUTCMonth();
+  const nDate = nowWib.getUTCDate();
+
+  const rDayTimestamp = Date.UTC(rYear, rMonth, rDate);
+  const nDayTimestamp = Date.UTC(nYear, nMonth, nDate);
+  const calendarDaysDiff = Math.round(
+    (nDayTimestamp - rDayTimestamp) / (24 * 3600 * 1000),
+  );
+
+  if (calendarDaysDiff === 0) {
+    if (diffHour < 4) return `${diffHour} jam lalu`;
+    return `Hari ini, ${timeStr}`;
+  }
+  if (calendarDaysDiff === 1) {
+    return `Kemarin, ${timeStr}`;
+  }
+  if (calendarDaysDiff >= 2 && calendarDaysDiff <= 6) {
+    return `${calendarDaysDiff} hari lalu, ${timeStr}`;
+  }
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+  return `${rDate} ${months[rMonth]} ${rYear}, ${timeStr}`;
+}
+
+function mergeAdminReviews(
+  prev: AdminReview[],
+  incoming: AdminReview[],
+): AdminReview[] {
+  if (!Array.isArray(incoming) || incoming.length === 0) return prev;
+  const map = new Map<string, AdminReview>();
+
+  const getKey = (r: AdminReview) => {
+    if (r.orderId != null) return `ord-${r.orderId}`;
+    if (r.id != null && r.id < 1_000_000_000_000) return `ord-${r.id}`;
+    return `id-${r.id}`;
+  };
+
+  for (const r of incoming) {
+    if (r && (r.id != null || r.orderId != null)) {
+      map.set(getKey(r), r);
+    }
+  }
+
+  for (const r of prev) {
+    if (r && (r.id != null || r.orderId != null)) {
+      const key = getKey(r);
+      const existing = map.get(key);
+      if (existing) {
+        if (!existing.penumpangNama || existing.penumpangNama === "Pelanggan BecakListrik") {
+          existing.penumpangNama = r.penumpangNama || existing.penumpangNama;
+        }
+      } else {
+        map.set(key, r);
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    const tsA = typeof a.timestamp === 'number' && a.timestamp > 0 ? a.timestamp : (1700000000000 + (a.orderId || a.id || 0));
+    const tsB = typeof b.timestamp === 'number' && b.timestamp > 0 ? b.timestamp : (1700000000000 + (b.orderId || b.id || 0));
+    if (tsB !== tsA) return tsB - tsA;
+    return (b.orderId || b.id || 0) - (a.orderId || a.id || 0);
+  });
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [drivers, setDrivers] = useState<DriverRow[]>([]);
-  const [reviews, setReviews] = useState<AdminReview[]>([]);
+  const [reviews, setReviews] = useState<AdminReview[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('becak_admin_reviews');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+
+  const [currentClientTime, setCurrentClientTime] = useState<number>(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentClientTime(Date.now()), 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && reviews.length > 0) {
+      try {
+        localStorage.setItem('becak_admin_reviews', JSON.stringify(reviews));
+      } catch {}
+    }
+  }, [reviews]);
+
   const sortedAdminReviews = useMemo(() => {
     return [...reviews].sort((a, b) => {
-      const tsA = typeof a.timestamp === 'number' && a.timestamp > 0 ? a.timestamp : 0;
-      const tsB = typeof b.timestamp === 'number' && b.timestamp > 0 ? b.timestamp : 0;
+      const tsA = typeof a.timestamp === 'number' && a.timestamp > 0 ? a.timestamp : (1700000000000 + (a.orderId || a.id || 0));
+      const tsB = typeof b.timestamp === 'number' && b.timestamp > 0 ? b.timestamp : (1700000000000 + (b.orderId || b.id || 0));
       if (tsB !== tsA) return tsB - tsA;
       return (b.orderId || b.id || 0) - (a.orderId || a.id || 0);
     });
@@ -170,26 +304,6 @@ export default function AdminPage() {
   // Demo Control State
   const [demoActionLoading, setDemoActionLoading] = useState(false);
 
-  // Sinkronkan riwayat perjalanan dari localStorage browser penumpang agar pesanan kemarin langsung masuk ke Admin
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const savedHistory = localStorage.getItem('becak_passenger_trip_history');
-      if (savedHistory) {
-        const parsed = JSON.parse(savedHistory);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          void fetch('/api/driver/active', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'SYNC_HISTORY', trips: parsed }),
-          }).catch(() => {});
-        }
-      }
-    } catch {
-      // ignore parse error
-    }
-  }, []);
-
   // Load Dashboard Data from Server
   const loadData = useCallback(async () => {
     try {
@@ -202,23 +316,8 @@ export default function AdminPage() {
 
       if (statsRes.ok) setStats(statsJson);
       if (driversRes.ok && driversJson.drivers) setDrivers(driversJson.drivers);
-      if (driversRes.ok && driversJson.recentReviews) {
-        setReviews((prev) => {
-          const incoming: AdminReview[] = driversJson.recentReviews;
-          if (!prev || prev.length !== incoming.length) return incoming;
-          const prevMap = new Map((prev || []).map((p) => [p.orderId || p.id, p]));
-          const isSame = incoming.every((inc) => {
-            const p = prevMap.get(inc.orderId || inc.id);
-            return (
-              p &&
-              inc.penumpangNama === p.penumpangNama &&
-              inc.skor === p.skor &&
-              inc.tip === p.tip &&
-              inc.komentar === p.komentar
-            );
-          });
-          return isSame ? prev : incoming;
-        });
+      if (driversRes.ok && Array.isArray(driversJson.recentReviews) && driversJson.recentReviews.length > 0) {
+        setReviews((prev) => mergeAdminReviews(prev, driversJson.recentReviews));
       }
       setLastSyncTime(
         new Date().toLocaleTimeString('id-ID', {
@@ -263,23 +362,8 @@ export default function AdminPage() {
           });
         }
         if (driversRes.ok && driversJson.drivers) setDrivers(driversJson.drivers);
-        if (driversRes.ok && driversJson.recentReviews) {
-          setReviews((prev) => {
-            const incoming: AdminReview[] = driversJson.recentReviews;
-            if (!prev || prev.length !== incoming.length) return incoming;
-            const prevMap = new Map((prev || []).map((p) => [p.orderId || p.id, p]));
-            const isSame = incoming.every((inc) => {
-              const p = prevMap.get(inc.orderId || inc.id);
-              return (
-                p &&
-                inc.penumpangNama === p.penumpangNama &&
-                inc.skor === p.skor &&
-                inc.tip === p.tip &&
-                inc.komentar === p.komentar
-              );
-            });
-            return isSame ? prev : incoming;
-          });
+        if (driversRes.ok && Array.isArray(driversJson.recentReviews) && driversJson.recentReviews.length > 0) {
+          setReviews((prev) => mergeAdminReviews(prev, driversJson.recentReviews));
         }
         setLastSyncTime(
           new Date().toLocaleTimeString('id-ID', {
@@ -1722,7 +1806,9 @@ export default function AdminPage() {
                     <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>
                       {rev.penumpangNama} ➔ {rev.driverNama} ({rev.unit})
                     </strong>
-                    <small style={{ color: '#64748b', fontSize: '11px' }}>{rev.createdAt}</small>
+                    <small style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>
+                      {formatAdminReviewDynamicTime(rev, currentClientTime)}
+                    </small>
                   </div>
                   <div style={{ display: 'flex', gap: '2px', color: '#eab308' }}>
                     {Array.from({ length: rev.skor }).map((_, i) => (
