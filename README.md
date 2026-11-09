@@ -69,7 +69,7 @@ Platform ini menghubungkan 3 aktor utama secara real-time:
 | **Bahasa**          | TypeScript 5                      | Type-safety menyeluruh end-to-end                                |
 | **Styling**         | Vanilla Modern CSS + Tailwind     | Desain responsif, clean UI/UX, dan micro-interactions            |
 | **Peta & GIS**      | Leaflet.js + OpenStreetMap        | Pelacakan geospasial real-time tanpa ketergantungan API berbayar |
-| **Database & ORM**  | Prisma ORM (MySQL / SQLite)       | Skema relasional untuk pengguna, pesanan, armada, dan ulasan     |
+| **Database & ORM**  | Prisma ORM & MySQL                | Skema relasional untuk pengguna, pesanan, armada, dan ulasan     |
 | **Real-Time Store** | Shared Real-Time In-Memory Engine | Sinkronisasi lintas halaman < 1ms dengan backup disk cache       |
 | **Ikon**            | Lucide React                      | Simbol visual modern dan konsisten                               |
 
@@ -125,7 +125,7 @@ cp .env.example .env
 
 | Variabel         | Deskripsi                                                               | Nilai Default / Contoh                       |
 | :--------------- | :---------------------------------------------------------------------- | :------------------------------------------- |
-| `DATABASE_URL`   | String koneksi database relasional Prisma (MySQL / SQLite / PostgreSQL) | `mysql://root:@localhost:3306/becak_listrik` |
+| `DATABASE_URL`   | String koneksi database relasional Prisma (MySQL)                       | `mysql://root:@localhost:3306/becak_listrik` |
 | `SESSION_SECRET` | Kunci enkripsi sesi otentikasi JWT (minimal 32 karakter unik)           | `abcdefghijklmnopqrstuvwxyzabcdefgh`         |
 
 > 💡 _Catatan Pengujian Live:_ Pada lingkungan deployment Vercel (`https://becaklik.my.id`), seluruh konfigurasi environment telah disuntikkan secara aman melalui dashboard Vercel serta dilengkapi engine _fallback_ cerdas in-memory yang memastikan seluruh fitur, rute, dan simulasi tetap berjalan lancar 100%.
